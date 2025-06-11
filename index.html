@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reconocimiento de Objetos</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tensorflow/4.10.0/tf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tensorflow/4.10.0/tf-converter.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            color: white;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 800px;
+            width: 100%;
+        }
+
+        .camera-section {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        #video {
+            width: 100%;
+            max-width: 640px;
+            height: auto;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            display: block;
+            margin: 0 auto;
+        }
+
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 15px;
+            pointer-events: none;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(45deg, #2196F3, #1976D2);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #f44336, #d32f2f);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .status.loading {
+            background: rgba(255, 193, 7, 0.2);
+            border-color: rgba(255, 193, 7, 0.3);
+        }
+
+        .status.ready {
+            background: rgba(76, 175, 80, 0.2);
+            border-color: rgba(76, 175, 80, 0.3);
+        }
+
+        .status.error {
+            background: rgba(244, 67, 54, 0.2);
+            border-color: rgba(244, 67, 54, 0.3);
+        }
+
+        .detections {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .detections h3 {
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+            text-align: center;
+        }
+
+        .detection-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .detection-name {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .detection-confidence {
+            background: rgba(76, 175, 80, 0.8);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        .fps-counter {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+            
+            .controls {
+                gap: 10px;
+            }
+            
+            .btn {
+                padding: 10px 20px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎯 Reconocimiento de Objetos</h1>
+        <p>Inteligencia artificial para detectar objetos en tiempo real</p>
+    </div>
+
+    <div class="container">
+        <div class="status" id="status">
+            <strong>Inicializando...</strong><br>
+            Cargando modelo de inteligencia artificial...
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-primary" id="startBtn" disabled>
+                📷 Iniciar Cámara
+            </button>
+            <button class="btn btn-secondary" id="detectBtn" disabled>
+                🔍 Detectar Objetos
+            </button>
+            <button class="btn btn-danger" id="stopBtn" disabled>
+                ⏹️ Detener
+            </button>
+        </div>
+
+        <div class="camera-section">
+            <video id="video" autoplay muted playsinline></video>
+            <canvas id="canvas"></canvas>
+            <div class="fps-counter" id="fpsCounter" style="display: none;">FPS: 0</div>
+        </div>
+
+        <div class="detections" id="detections" style="display: none;">
+            <h3>🎯 Objetos Detectados</h3>
+            <div id="detectionsList"></div>
+        </div>
+    </div>
+
+    <script>
+        class ObjectDetectionApp {
+            constructor() {
+                this.model = null;
+                this.video = document.getElementById('video');
+                this.canvas = document.getElementById('canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.isDetecting = false;
+                this.stream = null;
+                this.animationId = null;
+                this.lastTime = 0;
+                this.fps = 0;
+                
+                this.initializeElements();
+                this.loadModel();
+            }
+
+            initializeElements() {
+                this.statusEl = document.getElementById('status');
+                this.startBtn = document.getElementById('startBtn');
+                this.detectBtn = document.getElementById('detectBtn');
+                this.stopBtn = document.getElementById('stopBtn');
+                this.detectionsEl = document.getElementById('detections');
+                this.detectionsListEl = document.getElementById('detectionsList');
+                this.fpsCounterEl = document.getElementById('fpsCounter');
+
+                this.startBtn.addEventListener('click', () => this.startCamera());
+                this.detectBtn.addEventListener('click', () => this.toggleDetection());
+                this.stopBtn.addEventListener('click', () => this.stopCamera());
+            }
+
+            updateStatus(message, type = 'loading') {
+                this.statusEl.className = `status ${type}`;
+                this.statusEl.innerHTML = message;
+            }
+
+            async loadModel() {
+                try {
+                    this.updateStatus('🤖 Cargando modelo COCO-SSD...', 'loading');
+                    
+                    // Cargar el modelo COCO-SSD desde CDN
+                    const script = document.createElement('script');
+                    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/tensorflow-models/2.4.0/coco-ssd.min.js';
+                    script.onload = async () => {
+                        try {
+                            this.model = await cocoSsd.load();
+                            this.updateStatus('✅ Modelo cargado correctamente. Listo para detectar objetos.', 'ready');
+                            this.startBtn.disabled = false;
+                        } catch (error) {
+                            console.error('Error loading model:', error);
+                            this.updateStatus('❌ Error al cargar el modelo. Recarga la página.', 'error');
+                        }
+                    };
+                    script.onerror = () => {
+                        this.updateStatus('❌ Error al cargar el modelo. Verifica tu conexión.', 'error');
+                    };
+                    document.head.appendChild(script);
+                } catch (error) {
+                    console.error('Error:', error);
+                    this.updateStatus('❌ Error al inicializar la aplicación.', 'error');
+                }
+            }
+
+            async startCamera() {
+                try {
+                    this.updateStatus('📷 Accediendo a la cámara...', 'loading');
+                    
+                    this.stream = await navigator.mediaDevices.getUserMedia({
+                        video: { 
+                            width: { ideal: 640 }, 
+                            height: { ideal: 480 },
+                            facingMode: 'environment'
+                        }
+                    });
+                    
+                    this.video.srcObject = this.stream;
+                    
+                    this.video.onloadedmetadata = () => {
+                        this.setupCanvas();
+                        this.updateStatus('✅ Cámara iniciada. Presiona "Detectar Objetos" para comenzar.', 'ready');
+                        this.startBtn.disabled = true;
+                        this.detectBtn.disabled = false;
+                        this.stopBtn.disabled = false;
+                    };
+                } catch (error) {
+                    console.error('Error accessing camera:', error);
+                    this.updateStatus('❌ Error al acceder a la cámara. Verifica los permisos.', 'error');
+                }
+            }
+
+            setupCanvas() {
+                this.canvas.width = this.video.videoWidth;
+                this.canvas.height = this.video.videoHeight;
+                this.canvas.style.width = this.video.offsetWidth + 'px';
+                this.canvas.style.height = this.video.offsetHeight + 'px';
+            }
+
+            toggleDetection() {
+                if (this.isDetecting) {
+                    this.stopDetection();
+                } else {
+                    this.startDetection();
+                }
+            }
+
+            startDetection() {
+                this.isDetecting = true;
+                this.detectBtn.textContent = '⏸️ Pausar Detección';
+                this.detectBtn.className = 'btn btn-secondary';
+                this.detectionsEl.style.display = 'block';
+                this.fpsCounterEl.style.display = 'block';
+                this.updateStatus('🔍 Detectando objetos en tiempo real...', 'ready');
+                this.detectLoop();
+            }
+
+            stopDetection() {
+                this.isDetecting = false;
+                this.detectBtn.textContent = '🔍 Detectar Objetos';
+                this.detectBtn.className = 'btn btn-primary';
+                this.fpsCounterEl.style.display = 'none';
+                this.updateStatus('⏸️ Detección pausada.', 'ready');
+                if (this.animationId) {
+                    cancelAnimationFrame(this.animationId);
+                }
+                this.clearCanvas();
+            }
+
+            async detectLoop() {
+                if (!this.isDetecting) return;
+
+                const currentTime = performance.now();
+                if (currentTime - this.lastTime > 100) { // Limitar a ~10 FPS
+                    await this.detectObjects();
+                    this.lastTime = currentTime;
+                    
+                    // Calcular FPS
+                    this.fps = Math.round(1000 / (currentTime - this.lastTime + 100));
+                    this.fpsCounterEl.textContent = `FPS: ${this.fps}`;
+                }
+
+                this.animationId = requestAnimationFrame(() => this.detectLoop());
+            }
+
+            async detectObjects() {
+                if (!this.model || !this.video.videoWidth) return;
+
+                try {
+                    const predictions = await this.model.detect(this.video);
+                    this.drawPredictions(predictions);
+                    this.displayDetections(predictions);
+                } catch (error) {
+                    console.error('Detection error:', error);
+                }
+            }
+
+            drawPredictions(predictions) {
+                this.clearCanvas();
+                
+                const scaleX = this.canvas.width / this.video.videoWidth;
+                const scaleY = this.canvas.height / this.video.videoHeight;
+
+                predictions.forEach(prediction => {
+                    if (prediction.score > 0.5) {
+                        const [x, y, width, height] = prediction.bbox;
+                        
+                        // Escalar coordenadas
+                        const scaledX = x * scaleX;
+                        const scaledY = y * scaleY;
+                        const scaledWidth = width * scaleX;
+                        const scaledHeight = height * scaleY;
+
+                        // Dibujar rectángulo de detección
+                        this.ctx.strokeStyle = '#00ff00';
+                        this.ctx.lineWidth = 3;
+                        this.ctx.strokeRect(scaledX, scaledY, scaledWidth, scaledHeight);
+
+                        // Dibujar etiqueta
+                        const label = `${prediction.class} (${Math.round(prediction.score * 100)}%)`;
+                        this.ctx.fillStyle = '#00ff00';
+                        this.ctx.font = '16px Arial';
+                        this.ctx.fillRect(scaledX, scaledY - 25, this.ctx.measureText(label).width + 10, 25);
+                        this.ctx.fillStyle = '#000000';
+                        this.ctx.fillText(label, scaledX + 5, scaledY - 5);
+                    }
+                });
+            }
+
+            displayDetections(predictions) {
+                const validPredictions = predictions.filter(p => p.score > 0.5);
+                
+                if (validPredictions.length === 0) {
+                    this.detectionsListEl.innerHTML = '<p style="text-align: center; opacity: 0.7;">No se detectaron objetos</p>';
+                    return;
+                }
+
+                const detectionItems = validPredictions
+                    .sort((a, b) => b.score - a.score)
+                    .map(prediction => `
+                        <div class="detection-item">
+                            <span class="detection-name">${this.translateClass(prediction.class)}</span>
+                            <span class="detection-confidence">${Math.round(prediction.score * 100)}%</span>
+                        </div>
+                    `).join('');
+
+                this.detectionsListEl.innerHTML = detectionItems;
+            }
+
+            translateClass(className) {
+                const translations = {
+                    'person': 'Persona',
+                    'bicycle': 'Bicicleta',
+                    'car': 'Coche',
+                    'motorcycle': 'Motocicleta',
+                    'airplane': 'Avión',
+                    'bus': 'Autobús',
+                    'train': 'Tren',
+                    'truck': 'Camión',
+                    'boat': 'Barco',
+                    'traffic light': 'Semáforo',
+                    'fire hydrant': 'Hidrante',
+                    'stop sign': 'Señal de stop',
+                    'parking meter': 'Parquímetro',
+                    'bench': 'Banco',
+                    'bird': 'Pájaro',
+                    'cat': 'Gato',
+                    'dog': 'Perro',
+                    'horse': 'Caballo',
+                    'sheep': 'Oveja',
+                    'cow': 'Vaca',
+                    'elephant': 'Elefante',
+                    'bear': 'Oso',
+                    'zebra': 'Cebra',
+                    'giraffe': 'Jirafa',
+                    'backpack': 'Mochila',
+                    'umbrella': 'Paraguas',
+                    'handbag': 'Bolso',
+                    'tie': 'Corbata',
+                    'suitcase': 'Maleta',
+                    'frisbee': 'Frisbee',
+                    'skis': 'Esquís',
+                    'snowboard': 'Snowboard',
+                    'sports ball': 'Pelota',
+                    'kite': 'Cometa',
+                    'baseball bat': 'Bate de béisbol',
+                    'baseball glove': 'Guante de béisbol',
+                    'skateboard': 'Monopatín',
+                    'surfboard': 'Tabla de surf',
+                    'tennis racket': 'Raqueta de tenis',
+                    'bottle': 'Botella',
+                    'wine glass': 'Copa de vino',
+                    'cup': 'Taza',
+                    'fork': 'Tenedor',
+                    'knife': 'Cuchillo',
+                    'spoon': 'Cuchara',
+                    'bowl': 'Cuenco',
+                    'banana': 'Plátano',
+                    'apple': 'Manzana',
+                    'sandwich': 'Sándwich',
+                    'orange': 'Naranja',
+                    'broccoli': 'Brócoli',
+                    'carrot': 'Zanahoria',
+                    'hot dog': 'Perrito caliente',
+                    'pizza': 'Pizza',
+                    'donut': 'Donut',
+                    'cake': 'Pastel',
+                    'chair': 'Silla',
+                    'couch': 'Sofá',
+                    'potted plant': 'Planta en maceta',
+                    'bed': 'Cama',
+                    'dining table': 'Mesa de comedor',
+                    'toilet': 'Inodoro',
+                    'tv': 'Televisión',
+                    'laptop': 'Portátil',
+                    'mouse': 'Ratón',
+                    'remote': 'Control remoto',
+                    'keyboard': 'Teclado',
+                    'cell phone': 'Teléfono móvil',
+                    'microwave': 'Microondas',
+                    'oven': 'Horno',
+                    'toaster': 'Tostadora',
+                    'sink': 'Fregadero',
+                    'refrigerator': 'Refrigerador',
+                    'book': 'Libro',
+                    'clock': 'Reloj',
+                    'vase': 'Jarrón',
+                    'scissors': 'Tijeras',
+                    'teddy bear': 'Osito de peluche',
+                    'hair drier': 'Secador de pelo',
+                    'toothbrush': 'Cepillo de dientes'
+                };
+                
+                return translations[className] || className;
+            }
+
+            clearCanvas() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            }
+
+            stopCamera() {
+                this.stopDetection();
+                
+                if (this.stream) {
+                    this.stream.getTracks().forEach(track => track.stop());
+                    this.stream = null;
+                }
+                
+                this.video.srcObject = null;
+                this.clearCanvas();
+                this.detectionsEl.style.display = 'none';
+                
+                this.startBtn.disabled = false;
+                this.detectBtn.disabled = true;
+                this.stopBtn.disabled = true;
+                
+                this.updateStatus('📷 Cámara detenida. Presiona "Iniciar Cámara" para comenzar.', 'ready');
+            }
+        }
+
+        // Inicializar la aplicación cuando se carga la página
+        window.addEventListener('load', () => {
+            new ObjectDetectionApp();
+        });
+    </script>
+</body>
+</html>
