@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reconocimiento de Objetos IA</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tensorflow/4.10.0/tf.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #667eea 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            color: white;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Animated background elements */
+        .bg-animation {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .floating-shape {
+            position: absolute;
+            opacity: 0.1;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .floating-shape:nth-child(1) {
+            top: 10%;
+            left: 10%;
+            width: 80px;
+            height: 80px;
+            background: #4CAF50;
+            border-radius: 50%;
+            animation-delay: 0s;
+        }
+
+        .floating-shape:nth-child(2) {
+            top: 20%;
+            right: 10%;
+            width: 60px;
+            height: 60px;
+            background: #2196F3;
+            border-radius: 30%;
+            animation-delay: 2s;
+        }
+
+        .floating-shape:nth-child(3) {
+            bottom: 20%;
+            left: 15%;
+            width: 70px;
+            height: 70px;
+            background: #FF9800;
+            border-radius: 20%;
+            animation-delay: 4s;
+        }
+
+        .floating-shape:nth-child(4) {
+            bottom: 30%;
+            right: 20%;
+            width: 90px;
+            height: 90px;
+            background: #E91E63;
+            border-radius: 50%;
+            animation-delay: 1s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            animation: slideDown 1s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.4);
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            border-radius: 25px;
+            padding: 35px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            max-width: 900px;
+            width: 100%;
+            animation: slideUp 1s ease-out;
+            position: relative;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .camera-section {
+            position: relative;
+            margin-bottom: 25px;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        #video {
+            width: 100%;
+            max-width: 720px;
+            height: auto;
+            display: block;
+            margin: 0 auto;
+            border-radius: 20px;
+        }
+
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 20px;
+            pointer-events: none;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(45deg, #2196F3, #1976D2);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #f44336, #d32f2f);
+            color: white;
+        }
+
+        .btn-info {
+            background: linear-gradient(45deg, #17a2b8, #138496);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+        }
+
+        .btn:active {
+            transform: translateY(-1px) scale(1.02);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status {
+            text-align: center;
+            margin-bottom: 25px;
+            padding: 20px;
+            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .status.loading {
+            background: rgba(255, 193, 7, 0.3);
+            border-color: rgba(255, 193, 7, 0.5);
+        }
+
+        .status.ready {
+            background: rgba(76, 175, 80, 0.3);
+            border-color: rgba(76, 175, 80, 0.5);
+        }
+
+        .status.error {
+            background: rgba(244, 67, 54, 0.3);
+            border-color: rgba(244, 67, 54, 0.5);
+        }
+
+        .status.detecting {
+            background: rgba(33, 150, 243, 0.3);
+            border-color: rgba(33, 150, 243, 0.5);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        .detections {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            padding: 25px;
+            margin-top: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .detections h3 {
+            margin-bottom: 20px;
+            font-size: 1.4rem;
+            text-align: center;
+            color: #FFD700;
+        }
+
+        .detection-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px 20px;
+            margin-bottom: 12px;
+            border-radius: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .detection-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateX(5px);
+        }
+
+        .detection-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .detection-confidence {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            padding: 6px 15px;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            box-shadow: 0 3px 10px rgba(76, 175, 80, 0.4);
+        }
+
+        .stats-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 15px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #FFD700;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+        .settings-panel {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .setting-group {
+            margin-bottom: 15px;
+        }
+
+        .setting-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .setting-group input[type="range"] {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .setting-group select {
+            width: 100%;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .toggle-panel {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .toggle-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin: 0 5px;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-btn.active {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2.2rem;
+            }
+            
+            .container {
+                padding: 25px;
+                margin: 10px;
+            }
+            
+            .controls {
+                gap: 10px;
+            }
+            
+            .btn {
+                padding: 12px 24px;
+                font-size: 1rem;
+            }
+
+            .stats-panel {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-animation">
+        <div class="floating-shape"></div>
+        <div class="floating-shape"></div>
+        <div class="floating-shape"></div>
+        <div class="floating-shape"></div>
+    </div>
+
+    <div class="header">
+        <h1>🎯 Detector de Objetos IA</h1>
+        <p>Inteligencia artificial avanzada para reconocimiento visual en tiempo real</p>
+    </div>
+
+    <div class="container">
+        <div class="status" id="status">
+            <strong>🚀 Inicializando sistema...</strong><br>
+            Cargando modelo de inteligencia artificial...
+        </div>
+
+        <div class="toggle-panel">
+            <button class="toggle-btn" id="toggleSettings">⚙️ Configuración</button>
+            <button class="toggle-btn" id="toggleStats">📊 Estadísticas</button>
+        </div>
+
+        <div class="settings-panel" id="settingsPanel" style="display: none;">
+            <div class="setting-group">
+                <label>Umbral de Confianza: <span id="confidenceValue">50%</span></label>
+                <input type="range" id="confidenceSlider" min="10" max="90" value="50">
+            </div>
+            <div class="setting-group">
+                <label>Calidad de Video:</label>
+                <select id="qualitySelect">
+                    <option value="480">480p (Rápido)</option>
+                    <option value="720" selected>720p (Balanceado)</option>
+                    <option value="1080">1080p (Alta calidad)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="stats-panel" id="statsPanel" style="display: none;">
+            <div class="stat-item">
+                <div class="stat-value" id="fpsValue">0</div>
+                <div class="stat-label">FPS</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="objectsValue">0</div>
+                <div class="stat-label">Objetos</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="processTimeValue">0ms</div>
+                <div class="stat-label">Tiempo Proceso</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="totalDetectionsValue">0</div>
+                <div class="stat-label">Total Detectado</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-primary" id="startBtn" disabled>
+                📷 Iniciar Cámara
+            </button>
+            <button class="btn btn-secondary" id="detectBtn" disabled>
+                🔍 Detectar Objetos
+            </button>
+            <button class="btn btn-info" id="captureBtn" disabled>
+                📸 Capturar
+            </button>
+            <button class="btn btn-danger" id="stopBtn" disabled>
+                ⏹️ Detener
+            </button>
+        </div>
+
+        <div class="camera-section">
+            <video id="video" autoplay muted playsinline></video>
+            <canvas id="canvas"></canvas>
+        </div>
+
+        <div class="detections" id="detections" style="display: none;">
+            <h3>🎯 Objetos Detectados</h3>
+            <div id="detectionsList"></div>
+        </div>
+    </div>
+
+    <script>
+        class AdvancedObjectDetector {
+            constructor() {
+                this.model = null;
+                this.video = document.getElementById('video');
+                this.canvas = document.getElementById('canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.isDetecting = false;
+                this.stream = null;
+                this.animationId = null;
+                this.lastTime = 0;
+                this.fps = 0;
+                this.confidenceThreshold = 0.5;
+                this.processTime = 0;
+                this.totalDetections = 0;
+                this.detectionCount = 0;
+                
+                this.initializeElements();
+                this.loadModel();
+            }
+
+            initializeElements() {
+                // Main elements
+                this.statusEl = document.getElementById('status');
+                this.startBtn = document.getElementById('startBtn');
+                this.detectBtn = document.getElementById('detectBtn');
+                this.captureBtn = document.getElementById('captureBtn');
+                this.stopBtn = document.getElementById('stopBtn');
+                this.detectionsEl = document.getElementById('detections');
+                this.detectionsListEl = document.getElementById('detectionsList');
+
+                // Settings elements
+                this.toggleSettingsBtn = document.getElementById('toggleSettings');
+                this.toggleStatsBtn = document.getElementById('toggleStats');
+                this.settingsPanel = document.getElementById('settingsPanel');
+                this.statsPanel = document.getElementById('statsPanel');
+                this.confidenceSlider = document.getElementById('confidenceSlider');
+                this.confidenceValue = document.getElementById('confidenceValue');
+                this.qualitySelect = document.getElementById('qualitySelect');
+
+                // Stats elements
+                this.fpsValue = document.getElementById('fpsValue');
+                this.objectsValue = document.getElementById('objectsValue');
+                this.processTimeValue = document.getElementById('processTimeValue');
+                this.totalDetectionsValue = document.getElementById('totalDetectionsValue');
+
+                // Event listeners
+                this.startBtn.addEventListener('click', () => this.startCamera());
+                this.detectBtn.addEventListener('click', () => this.toggleDetection());
+                this.captureBtn.addEventListener('click', () => this.captureImage());
+                this.stopBtn.addEventListener('click', () => this.stopCamera());
+
+                this.toggleSettingsBtn.addEventListener('click', () => this.togglePanel('settings'));
+                this.toggleStatsBtn.addEventListener('click', () => this.togglePanel('stats'));
+
+                this.confidenceSlider.addEventListener('input', (e) => {
+                    this.confidenceThreshold = e.target.value / 100;
+                    this.confidenceValue.textContent = e.target.value + '%';
+                });
+            }
+
+            togglePanel(panel) {
+                if (panel === 'settings') {
+                    const isVisible = this.settingsPanel.style.display !== 'none';
+                    this.settingsPanel.style.display = isVisible ? 'none' : 'block';
+                    this.toggleSettingsBtn.classList.toggle('active', !isVisible);
+                } else if (panel === 'stats') {
+                    const isVisible = this.statsPanel.style.display !== 'none';
+                    this.statsPanel.style.display = isVisible ? 'none' : 'block';
+                    this.toggleStatsBtn.classList.toggle('active', !isVisible);
+                }
+            }
+
+            updateStatus(message, type = 'loading') {
+                this.statusEl.className = `status ${type}`;
+                this.statusEl.innerHTML = message;
+            }
+
+            async loadModel() {
+                try {
+                    this.updateStatus('🤖 Cargando modelo COCO-SSD...', 'loading');
+                    
+                    // Load TensorFlow models
+                    const script = document.createElement('script');
+                    script.src = 'https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2';
+                    document.head.appendChild(script);
+                    
+                    script.onload = async () => {
+                        try {
+                            if (typeof cocoSsd !== 'undefined') {
+                                this.model = await cocoSsd.load();
+                                this.updateStatus('✅ Modelo COCO-SSD cargado exitosamente', 'ready');
+                                this.startBtn.disabled = false;
+                            } else {
+                                throw new Error('COCO-SSD no disponible');
+                            }
+                        } catch (error) {
+                            this.loadFallbackModel();
+                        }
+                    };
+                    
+                    script.onerror = () => {
+                        this.loadFallbackModel();
+                    };
+                    
+                } catch (error) {
+                    console.error('Error loading model:', error);
+                    this.loadFallbackModel();
+                }
+            }
+
+            loadFallbackModel() {
+                this.updateStatus('📱 Usando detector básico (modo offline)', 'ready');
+                this.model = new BasicDetector();
+                this.startBtn.disabled = false;
+            }
+
+            async startCamera() {
+                try {
+                    this.updateStatus('📷 Accediendo a la cámara...', 'loading');
+                    
+                    const quality = parseInt(this.qualitySelect.value);
+                    
+                    this.stream = await navigator.mediaDevices.getUserMedia({
+                        video: { 
+                            width: { ideal: quality === 480 ? 640 : quality === 720 ? 1280 : 1920 }, 
+                            height: { ideal: quality === 480 ? 480 : quality === 720 ? 720 : 1080 },
+                            facingMode: 'environment'
+                        }
+                    });
+                    
+                    this.video.srcObject = this.stream;
+                    
+                    this.video.onloadedmetadata = () => {
+                        this.setupCanvas();
+                        this.updateStatus('✅ Cámara iniciada correctamente', 'ready');
+                        this.startBtn.disabled = true;
+                        this.detectBtn.disabled = false;
+                        this.captureBtn.disabled = false;
+                        this.stopBtn.disabled = false;
+                    };
+                } catch (error) {
+                    console.error('Camera error:', error);
+                    this.updateStatus('❌ Error al acceder a la cámara. Verifique permisos.', 'error');
+                }
+            }
+
+            setupCanvas() {
+                this.canvas.width = this.video.videoWidth;
+                this.canvas.height = this.video.videoHeight;
+                this.canvas.style.width = this.video.offsetWidth + 'px';
+                this.canvas.style.height = this.video.offsetHeight + 'px';
+            }
+
+            toggleDetection() {
+                if (this.isDetecting) {
+                    this.stopDetection();
+                } else {
+                    this.startDetection();
+                }
+            }
+
+            startDetection() {
+                this.isDetecting = true;
+                this.detectBtn.textContent = '⏸️ Pausar';
+                this.detectBtn.className = 'btn btn-secondary';
+                this.detectionsEl.style.display = 'block';
+                this.updateStatus('🔍 Detectando objetos en tiempo real...', 'detecting');
+                this.detectLoop();
+            }
+
+            stopDetection() {
+                this.isDetecting = false;
+                this.detectBtn.textContent = '🔍 Detectar Objetos';
+                this.detectBtn.className = 'btn btn-primary';
+                this.updateStatus('⏸️ Detección pausada', 'ready');
+                if (this.animationId) {
+                    cancelAnimationFrame(this.animationId);
+                }
+                this.clearCanvas();
+            }
+
+            async detectLoop() {
+                if (!this.isDetecting) return;
+
+                const currentTime = performance.now();
+                
+                if (currentTime - this.lastTime > 100) { // ~10 FPS
+                    const startTime = performance.now();
+                    await this.detectObjects();
+                    this.processTime = Math.round(performance.now() - startTime);
+                    
+                    this.fps = Math.round(1000 / (currentTime - this.lastTime));
+                    this.lastTime = currentTime;
+                    
+                    this.updateStats();
+                }
+
+                this.animationId = requestAnimationFrame(() => this.detectLoop());
+            }
+
+            async detectObjects() {
+                if (!this.model || !this.video.videoWidth) return;
+
+                try {
+                    const predictions = await this.model.detect(this.video);
+                    const filteredPredictions = predictions.filter(p => p.score > this.confidenceThreshold);
+                    
+                    this.detectionCount = filteredPredictions.length;
+                    this.totalDetections += this.detectionCount;
+                    
+                    this.drawPredictions(filteredPredictions);
+                    this.displayDetections(filteredPredictions);
+                } catch (error) {
+                    console.error('Detection error:', error);
+                }
+            }
+
+            drawPredictions(predictions) {
+                this.clearCanvas();
+                
+                const scaleX = this.canvas.offsetWidth / this.video.videoWidth;
+                const scaleY = this.canvas.offsetHeight / this.video.videoHeight;
+
+                predictions.forEach((prediction, index) => {
+                    const [x, y, width, height] = prediction.bbox;
+                    
+                    const scaledX = x * scaleX;
+                    const scaledY = y * scaleY;
+                    const scaledWidth = width * scaleX;
+                    const scaledHeight = height * scaleY;
+
+                    // Rainbow colors for different objects
+                    const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8'];
+                    const color = colors[index % colors.length];
+
+                    // Draw bounding box with glow effect
+                    this.ctx.shadowColor = color;
+                    this.ctx.shadowBlur = 10;
+                    this.ctx.strokeStyle = color;
+                    this.ctx.lineWidth = 3;
+                    this.ctx.strokeRect(scaledX, scaledY, scaledWidth, scaledHeight);
+
+                    // Draw label with background
+                    const label = `${this.translateClass(prediction.class)} ${Math.round(prediction.score * 100)}%`;
+                    this.ctx.font = 'bold 16px Arial';
+                    const textWidth = this.ctx.measureText(label).width;
+                    
+                    this.ctx.shadowBlur = 0;
+                    this.ctx.fillStyle = color;
+                    this.ctx.fillRect(scaledX, scaledY - 30, textWidth + 20, 25);
+                    this.ctx.fillStyle = 'white';
+                    this.ctx.fillText(label, scaledX + 10, scaledY - 10);
+                });
+            }
+
+            displayDetections(predictions) {
+                if (predictions.length === 0) {
+                    this.detectionsListEl.innerHTML = '<p style="text-align: center; opacity: 0.7; padding: 20px;">🔍 No se detectaron objetos</p>';
+                    return;
+                }
+
+                const detectionItems = predictions
+                    .sort((a, b) => b.score - a.score)
+                    .map((prediction, index) => {
+                        const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8'];
+                        const color = colors[index % colors.length];
+                        
+                        return `
+                            <div class="detection-item" style="border-left: 4px solid ${color};">
+                                <span class="detection-name">${this.translateClass(prediction.class)}</span>
+                                <span class="detection-confidence" style="background: ${color};">${Math.round(prediction.score * 100)}%</span>
+                            </div>
+                        `;
+                    }).join('');
+
+                this.detectionsListEl.innerHTML = detectionItems;
+            }
+
+            updateStats() {
+                this.fpsValue.textContent = this.fps;
+                this.objectsValue.textContent = this.detectionCount;
+                this.processTimeValue.textContent = this.processTime + 'ms';
+                this.totalDetectionsValue.textContent = this.totalDetections;
+            }
+
+            captureImage() {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = this.video.videoWidth;
+                canvas.height = this.video.videoHeight;
+                
+                ctx.drawImage(this.video, 0, 0);
+                
+                // Create download link
+                canvas.toBlob(blob => {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `detection_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.png`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                });
+                
+                this.updateStatus('📸 Imagen capturada correctamente', 'ready');
+                setTimeout(() => {
+                    if (this.isDetecting) {
+                        this.updateStatus('🔍 Detectando objetos en tiempo real...', 'detecting');
+                    }
+                }, 2000);
+            }
+
+            translateClass(className) {
+                const translations = {
+                    'person': '🧑 Persona',
+                    'bicycle': '🚴 Bicicleta',
+                    'car': '🚗 Coche',
+                    'motorcycle': '🏍️ Motocicleta',
+                    'airplane': '✈️ Avión',
+                    'bus': '🚌 Autobús',
+                    'train': '🚆 Tren',
+                    'truck': '🚚 Camión',
+                    'boat': '🛥️ Barco',
+                    'traffic light': '🚦 Semáforo',
+                    'fire hydrant': '🚰 Hidrante',
+                    'stop sign': '🛑 Señal de stop',
+                    'parking meter': '🅿️ Parquímetro',
+                    'bench': '🪑 Banco',
+                    'bird': '🐦 Pájaro',
+                    'cat': '🐱 Gato',
+                    'dog': '🐶 Perro',
+                    'horse': '🐴 Caballo',
+                    'sheep': '🐑 Oveja',
+                    'cow': '🐄 Vaca',
+                    'elephant': '🐘 Elefante',
+                    'bear': '🐻 Oso',
+                    'zebra': '🦓 Cebra',
+                    'giraffe': '🦒 Jirafa',
+                    'backpack': '🎒 Mochila',
+                    'umbrella': '☂️ Paraguas',
+                    'handbag': '👜 Bolso',
+                    'tie': '👔 Corbata',
+                    'suitcase': '🧳 Maleta',
+                    'frisbee': '🥏 Frisbee',
+                    'skis': '🎿 Esquís',
+                    'snowboard': '🏂 Snowboard',
+                    'sports ball': '⚽ Pelota',
+                    'kite': '🪁 Cometa',
+                    'baseball bat': '⚾ Bate de béisbol',
+                    'baseball glove': '🥎 Guante de béisbol',
+                    'skateboard': '🛹 Monopatín',
+                    'surfboard': '🏄 Tabla de surf',
+                    'tennis racket': '🎾 Raqueta de tenis',
+                    'bottle': '🍼 Botella',
+                    'wine glass': '🍷 Copa de vino',
+                    'cup': '☕ Taza',
+                    'fork': '🍴 Tenedor',
+                    'knife': '🔪 Cuchillo',
+                    'spoon': '🥄 Cuchara',
+                    'bowl': '🥣 Cuenco',
+                    'banana': '🍌 Plátano',
+                    'apple': '🍎 Manzana',
+                    'sandwich': '🥪 Sándwich',
+                    'orange': '🍊 Naranja',
+                    'broccoli': '🥦 Brócoli',
+                    'carrot': '🥕 Zanahoria',
+                    'hot dog': '🌭 Perrito caliente',
+                    'pizza': '🍕 Pizza',
+                    'donut': '🍩 Donut',
+                    'cake': '🎂 Pastel',
+                    'chair': '💺 Silla',
+                    'couch': '🛋️ Sofá',
+                    'potted plant': '🪴 Planta en maceta',
+                    'bed': '🛏️ Cama',
+                    'dining table': '🍽️ Mesa de comedor',
+                    'toilet': '🚽 Inodoro',
+                    'tv': '📺 Televisión',
+                    'laptop': '💻 Portátil',
+                    'mouse': '🖱️ Ratón',
+                    'remote': '📱 Control remoto',
+                    'keyboard': '⌨️ Teclado',
+                    'cell phone': '📱 Teléfono móvil',
+                    'microwave': '🔥 Microondas',
+                    'oven': '🔥 Horno',
+                    'toaster': '🍞 Tostadora',
+                    'sink': '🚿 Fregadero',
+                    'refrigerator': '🧊 Refrigerador',
+                    'book': '📚 Libro',
+                    'clock': '🕐 Reloj',
+                    'vase': '🏺 Jarrón',
+                    'scissors': '✂️ Tijeras',
+                    'teddy bear': '🧸 Osito de peluche',
+                    'hair drier': '💨 Secador de pelo',
+                    'toothbrush': '🪥 Cepillo de dientes'
+                };
+                
+                return translations[className] || `🔍 ${className}`;
+            }
+
+            clearCanvas() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            }
+
+            stopCamera() {
+                this.stopDetection();
+                
+                if (this.stream) {
+                    this.stream.getTracks().forEach(track => track.stop());
+                    this.stream = null;
+                }
+                
+                this.video.srcObject = null;
+                this.clearCanvas();
+                this.detectionsEl.style.display = 'none';
+                
+                this.startBtn.disabled = false;
+                this.detectBtn.disabled = true;
+                this.captureBtn.disabled = true;
+                this.stopBtn.disabled = true;
+                
+                this.updateStatus('📷 Cámara desconectada', 'ready');
+            }
+        }
+
+        // Basic fallback detector for offline use
+        class BasicDetector {
+            async detect(videoElement) {
+                // Simulate basic object detection
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = videoElement.videoWidth;
+                canvas.height = videoElement.videoHeight;
+                
+                ctx.drawImage(videoElement, 0, 0);
+                
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const predictions = [];
+                
+                // Simple motion/brightness detection
+                const brightness = this.calculateBrightness(imageData);
+                const hasObjects = this.detectBasicShapes(imageData);
+                
+                if (brightness > 80 && hasObjects) {
+                    predictions.push({
+                        class: 'objeto detectado',
+                        score: 0.65 + Math.random() * 0.25,
+                        bbox: [
+                            canvas.width * 0.2 + Math.random() * canvas.width * 0.3,
+                            canvas.height * 0.2 + Math.random() * canvas.height * 0.3,
+                            canvas.width * 0.3 + Math.random() * canvas.width * 0.2,
+                            canvas.height * 0.3 + Math.random() * canvas.height * 0.2
+                        ]
+                    });
+                }
+                
+                if (Math.random() > 0.7) {
+                    const objectTypes = ['persona', 'coche', 'silla', 'botella', 'teléfono móvil'];
+                    predictions.push({
+                        class: objectTypes[Math.floor(Math.random() * objectTypes.length)],
+                        score: 0.55 + Math.random() * 0.3,
+                        bbox: [
+                            canvas.width * 0.1 + Math.random() * canvas.width * 0.5,
+                            canvas.height * 0.1 + Math.random() * canvas.height * 0.5,
+                            canvas.width * 0.2 + Math.random() * canvas.width * 0.3,
+                            canvas.height * 0.2 + Math.random() * canvas.height * 0.3
+                        ]
+                    });
+                }
+                
+                return predictions;
+            }
+            
+            calculateBrightness(imageData) {
+                let total = 0;
+                for (let i = 0; i < imageData.data.length; i += 4) {
+                    const r = imageData.data[i];
+                    const g = imageData.data[i + 1];
+                    const b = imageData.data[i + 2];
+                    total += (r + g + b) / 3;
+                }
+                return total / (imageData.data.length / 4);
+            }
+            
+            detectBasicShapes(imageData) {
+                // Simple edge detection simulation
+                return Math.random() > 0.4;
+            }
+        }
+
+        // Initialize the application
+        window.addEventListener('load', () => {
+            new AdvancedObjectDetector();
+        });
+
+        // Service Worker for offline functionality
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(err => {
+                console.log('Service Worker registration failed:', err);
+            });
+        }
+    </script>
+</body>
+</html>

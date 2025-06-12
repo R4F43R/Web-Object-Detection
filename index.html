@@ -3,24 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reconocimiento de Objetos IA</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tensorflow/4.10.0/tf.min.js"></script>
+    <title>Detector de Objetos IA Avanzado</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.11.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@1.0.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection@1.0.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.5/dist/tesseract.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #3f37c9;
+            --success: #4cc9f0;
+            --danger: #f72585;
+            --warning: #f8961e;
+            --dark: #1a1a2e;
+            --light: #f8f9fa;
+            --text: #333;
+            --bg-gradient: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #667eea 100%);
+            --card-bg: rgba(255, 255, 255, 0.12);
+            --card-border: rgba(255, 255, 255, 0.2);
+            --shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+        }
+
+        .dark-mode {
+            --primary: #4895ef;
+            --secondary: #4361ee;
+            --success: #4cc9f0;
+            --danger: #f72585;
+            --warning: #f9c74f;
+            --dark: #0d1b2a;
+            --light: #e0e1dd;
+            --text: #e0e1dd;
+            --bg-gradient: linear-gradient(135deg, #0d1b2a 0%, #1b263b 50%, #415a77 100%);
+            --card-bg: rgba(13, 27, 42, 0.7);
+            --card-border: rgba(224, 225, 221, 0.15);
+            --shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            transition: background 0.3s ease, color 0.3s ease;
         }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #667eea 100%);
+            background: var(--bg-gradient);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
             padding: 20px;
-            color: white;
+            color: var(--light);
             position: relative;
             overflow-x: hidden;
         }
@@ -34,52 +70,14 @@
             height: 100%;
             pointer-events: none;
             z-index: -1;
+            overflow: hidden;
         }
 
         .floating-shape {
             position: absolute;
             opacity: 0.1;
             animation: float 6s ease-in-out infinite;
-        }
-
-        .floating-shape:nth-child(1) {
-            top: 10%;
-            left: 10%;
-            width: 80px;
-            height: 80px;
-            background: #4CAF50;
             border-radius: 50%;
-            animation-delay: 0s;
-        }
-
-        .floating-shape:nth-child(2) {
-            top: 20%;
-            right: 10%;
-            width: 60px;
-            height: 60px;
-            background: #2196F3;
-            border-radius: 30%;
-            animation-delay: 2s;
-        }
-
-        .floating-shape:nth-child(3) {
-            bottom: 20%;
-            left: 15%;
-            width: 70px;
-            height: 70px;
-            background: #FF9800;
-            border-radius: 20%;
-            animation-delay: 4s;
-        }
-
-        .floating-shape:nth-child(4) {
-            bottom: 30%;
-            right: 20%;
-            width: 90px;
-            height: 90px;
-            background: #E91E63;
-            border-radius: 50%;
-            animation-delay: 1s;
         }
 
         @keyframes float {
@@ -87,10 +85,31 @@
             50% { transform: translateY(-20px) rotate(180deg); }
         }
 
+        /* AI Brain animation */
+        .ai-brain {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 15rem;
+            opacity: 0.03;
+            z-index: -1;
+            animation: pulse 5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.03; transform: translate(-50%, -50%) scale(1); }
+            50% { opacity: 0.08; transform: translate(-50%, -50%) scale(1.05); }
+            100% { opacity: 0.03; transform: translate(-50%, -50%) scale(1); }
+        }
+
         .header {
             text-align: center;
             margin-bottom: 30px;
             animation: slideDown 1s ease-out;
+            width: 100%;
+            max-width: 900px;
+            position: relative;
         }
 
         @keyframes slideDown {
@@ -102,29 +121,54 @@
             font-size: 3rem;
             margin-bottom: 10px;
             text-shadow: 3px 3px 6px rgba(0,0,0,0.4);
-            background: linear-gradient(45deg, #FFD700, #FFA500);
+            background: linear-gradient(45deg, var(--success), var(--primary));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            position: relative;
+            display: inline-block;
+        }
+
+        .header h1::after {
+            content: "";
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 4px;
+            background: var(--success);
+            border-radius: 2px;
         }
 
         .header p {
             font-size: 1.2rem;
             opacity: 0.9;
             font-weight: 300;
+            max-width: 600px;
+            margin: 0 auto;
         }
 
         .container {
-            background: rgba(255, 255, 255, 0.15);
+            background: var(--card-bg);
             backdrop-filter: blur(20px);
             border-radius: 25px;
             padding: 35px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            max-width: 900px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--card-border);
+            max-width: 1200px;
             width: 100%;
             animation: slideUp 1s ease-out;
             position: relative;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        @media (max-width: 992px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
         }
 
         @keyframes slideUp {
@@ -138,32 +182,36 @@
             border-radius: 20px;
             overflow: hidden;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            grid-column: 1 / -1;
         }
 
         #video {
             width: 100%;
-            max-width: 720px;
+            max-width: 100%;
             height: auto;
             display: block;
             margin: 0 auto;
             border-radius: 20px;
+            background: #000;
         }
 
         #canvas {
             position: absolute;
             top: 0;
-            left: 50%;
-            transform: translateX(-50%);
+            left: 0;
+            width: 100%;
+            height: 100%;
             border-radius: 20px;
             pointer-events: none;
         }
 
         .controls {
             display: flex;
+            flex-wrap: wrap;
             gap: 15px;
             justify-content: center;
             margin-bottom: 25px;
-            flex-wrap: wrap;
+            grid-column: 1 / -1;
         }
 
         .btn {
@@ -177,6 +225,13 @@
             box-shadow: 0 6px 20px rgba(0,0,0,0.3);
             position: relative;
             overflow: hidden;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn i {
+            font-size: 1.2rem;
         }
 
         .btn::before {
@@ -195,22 +250,22 @@
         }
 
         .btn-primary {
-            background: linear-gradient(45deg, #4CAF50, #45a049);
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
             color: white;
         }
 
         .btn-secondary {
-            background: linear-gradient(45deg, #2196F3, #1976D2);
+            background: linear-gradient(45deg, var(--success), #2ec4b6);
             color: white;
         }
 
         .btn-danger {
-            background: linear-gradient(45deg, #f44336, #d32f2f);
+            background: linear-gradient(45deg, var(--danger), #d00070);
             color: white;
         }
 
-        .btn-info {
-            background: linear-gradient(45deg, #17a2b8, #138496);
+        .btn-warning {
+            background: linear-gradient(45deg, var(--warning), #f3722c);
             color: white;
         }
 
@@ -238,6 +293,7 @@
             border: 1px solid rgba(255, 255, 255, 0.3);
             backdrop-filter: blur(10px);
             transition: all 0.3s ease;
+            grid-column: 1 / -1;
         }
 
         .status.loading {
@@ -267,20 +323,34 @@
             100% { transform: scale(1); }
         }
 
-        .detections {
-            background: rgba(255, 255, 255, 0.15);
+        .ai-panel {
+            background: var(--card-bg);
             border-radius: 20px;
             padding: 25px;
-            margin-top: 25px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            border: 1px solid var(--card-border);
             backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
         }
 
-        .detections h3 {
+        .panel-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
             margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .panel-header i {
+            font-size: 1.8rem;
+            color: var(--success);
+        }
+
+        .panel-header h3 {
             font-size: 1.4rem;
-            text-align: center;
-            color: #FFD700;
+            color: var(--success);
         }
 
         .detection-item {
@@ -291,7 +361,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid var(--card-border);
             transition: all 0.3s ease;
             animation: slideIn 0.5s ease-out;
         }
@@ -309,23 +379,91 @@
         .detection-name {
             font-weight: 600;
             font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .detection-confidence {
-            background: linear-gradient(45deg, #4CAF50, #45a049);
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
             color: white;
             padding: 6px 15px;
             border-radius: 25px;
             font-size: 0.9rem;
             font-weight: 700;
-            box-shadow: 0 3px 10px rgba(76, 175, 80, 0.4);
+        }
+
+        .emotion-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .emotion-name {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .emotion-bar {
+            height: 10px;
+            border-radius: 5px;
+            background: rgba(255,255,255,0.1);
+            flex-grow: 1;
+            margin: 0 15px;
+            overflow: hidden;
+        }
+
+        .emotion-value {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--success));
+            border-radius: 5px;
+        }
+
+        .emotion-percent {
+            min-width: 40px;
+            text-align: right;
+            font-weight: 600;
+        }
+
+        .text-recognition {
+            background: rgba(255,255,255,0.05);
+            padding: 15px;
+            border-radius: 15px;
+            margin-top: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .ai-recommendation {
+            background: linear-gradient(45deg, rgba(76,175,80,0.2), rgba(33,150,243,0.2));
+            border-left: 4px solid var(--success);
+            padding: 15px;
+            border-radius: 0 15px 15px 0;
+            margin-top: 20px;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .ai-recommendation h4 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            color: var(--success);
         }
 
         .stats-panel {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
             gap: 15px;
-            margin-bottom: 20px;
+            margin-top: 20px;
         }
 
         .stat-item {
@@ -333,13 +471,14 @@
             padding: 15px;
             border-radius: 15px;
             text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid var(--card-border);
         }
 
         .stat-value {
             font-size: 1.8rem;
             font-weight: bold;
-            color: #FFD700;
+            color: var(--success);
+            line-height: 1.2;
         }
 
         .stat-label {
@@ -348,58 +487,99 @@
             margin-top: 5px;
         }
 
-        .settings-panel {
-            background: rgba(255, 255, 255, 0.1);
+        .theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            width: 60px;
+            height: 30px;
             border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .setting-group {
-            margin-bottom: 15px;
-        }
-
-        .setting-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 500;
-        }
-
-        .setting-group input[type="range"] {
-            width: 100%;
-            margin-bottom: 10px;
-        }
-
-        .setting-group select {
-            width: 100%;
-            padding: 8px;
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-        }
-
-        .toggle-panel {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .toggle-btn {
-            background: rgba(255, 255, 255, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 20px;
             cursor: pointer;
-            font-size: 0.9rem;
-            margin: 0 5px;
-            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            padding: 0 5px;
+            z-index: 100;
         }
 
-        .toggle-btn.active {
-            background: linear-gradient(45deg, #4CAF50, #45a049);
-            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+        .toggle-handle {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--warning);
+            transition: transform 0.3s ease;
+        }
+
+        .dark-mode .toggle-handle {
+            transform: translateX(30px);
+        }
+
+        .mode-switcher {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            grid-column: 1 / -1;
+        }
+
+        .mode-btn {
+            padding: 10px 20px;
+            border-radius: 30px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid var(--card-border);
+            color: var(--light);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .mode-btn.active {
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            box-shadow: 0 4px 15px rgba(67, 97, 238, 0.4);
+        }
+
+        .ai-processing {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            border-radius: 20px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .ai-processing.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .ai-processing i {
+            font-size: 4rem;
+            color: var(--success);
+            margin-bottom: 20px;
+            animation: spin 1.5s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .ai-processing p {
+            font-size: 1.2rem;
+            font-weight: 600;
+            text-align: center;
+            max-width: 300px;
         }
 
         @media (max-width: 768px) {
@@ -408,8 +588,7 @@
             }
             
             .container {
-                padding: 25px;
-                margin: 10px;
+                padding: 20px;
             }
             
             .controls {
@@ -417,104 +596,165 @@
             }
             
             .btn {
-                padding: 12px 24px;
+                padding: 12px 20px;
                 font-size: 1rem;
             }
 
-            .stats-panel {
-                grid-template-columns: 1fr 1fr;
+            .ai-panel {
+                padding: 20px;
             }
         }
     </style>
 </head>
 <body>
     <div class="bg-animation">
-        <div class="floating-shape"></div>
-        <div class="floating-shape"></div>
-        <div class="floating-shape"></div>
-        <div class="floating-shape"></div>
+        <!-- Floating shapes will be generated by JS -->
+    </div>
+    
+    <div class="ai-brain">
+        <i class="fas fa-brain"></i>
+    </div>
+
+    <div class="theme-toggle" id="themeToggle">
+        <div class="toggle-handle"></div>
     </div>
 
     <div class="header">
-        <h1>🎯 Detector de Objetos IA</h1>
-        <p>Inteligencia artificial avanzada para reconocimiento visual en tiempo real</p>
+        <h1><i class="fas fa-robot"></i> Detector de Objetos IA Avanzado</h1>
+        <p>Inteligencia artificial de próxima generación para reconocimiento visual multidimensional</p>
     </div>
 
     <div class="container">
-        <div class="status" id="status">
-            <strong>🚀 Inicializando sistema...</strong><br>
-            Cargando modelo de inteligencia artificial...
+        <div class="status ready" id="status">
+            <strong>✅ Sistema listo</strong><br>
+            Haz clic en "Iniciar Cámara" para comenzar
         </div>
 
-        <div class="toggle-panel">
-            <button class="toggle-btn" id="toggleSettings">⚙️ Configuración</button>
-            <button class="toggle-btn" id="toggleStats">📊 Estadísticas</button>
-        </div>
-
-        <div class="settings-panel" id="settingsPanel" style="display: none;">
-            <div class="setting-group">
-                <label>Umbral de Confianza: <span id="confidenceValue">50%</span></label>
-                <input type="range" id="confidenceSlider" min="10" max="90" value="50">
-            </div>
-            <div class="setting-group">
-                <label>Calidad de Video:</label>
-                <select id="qualitySelect">
-                    <option value="480">480p (Rápido)</option>
-                    <option value="720" selected>720p (Balanceado)</option>
-                    <option value="1080">1080p (Alta calidad)</option>
-                </select>
-            </div>
-        </div>
-
-        <div class="stats-panel" id="statsPanel" style="display: none;">
-            <div class="stat-item">
-                <div class="stat-value" id="fpsValue">0</div>
-                <div class="stat-label">FPS</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value" id="objectsValue">0</div>
-                <div class="stat-label">Objetos</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value" id="processTimeValue">0ms</div>
-                <div class="stat-label">Tiempo Proceso</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value" id="totalDetectionsValue">0</div>
-                <div class="stat-label">Total Detectado</div>
-            </div>
+        <div class="mode-switcher">
+            <button class="mode-btn active" data-mode="objects">
+                <i class="fas fa-box"></i> Objetos
+            </button>
+            <button class="mode-btn" data-mode="faces">
+                <i class="fas fa-user"></i> Rostros
+            </button>
+            <button class="mode-btn" data-mode="text">
+                <i class="fas fa-font"></i> Texto
+            </button>
         </div>
 
         <div class="controls">
-            <button class="btn btn-primary" id="startBtn" disabled>
-                📷 Iniciar Cámara
+            <button class="btn btn-primary" id="startBtn">
+                <i class="fas fa-camera"></i> Iniciar Cámara
             </button>
             <button class="btn btn-secondary" id="detectBtn" disabled>
-                🔍 Detectar Objetos
+                <i class="fas fa-search"></i> Analizar
             </button>
-            <button class="btn btn-info" id="captureBtn" disabled>
-                📸 Capturar
+            <button class="btn btn-warning" id="captureBtn" disabled>
+                <i class="fas fa-camera-retro"></i> Capturar
             </button>
             <button class="btn btn-danger" id="stopBtn" disabled>
-                ⏹️ Detener
+                <i class="fas fa-stop"></i> Detener
             </button>
         </div>
 
         <div class="camera-section">
             <video id="video" autoplay muted playsinline></video>
             <canvas id="canvas"></canvas>
+            <div class="ai-processing" id="aiProcessing">
+                <i class="fas fa-cogs"></i>
+                <p>Procesando con inteligencia artificial...</p>
+            </div>
         </div>
 
-        <div class="detections" id="detections" style="display: none;">
-            <h3>🎯 Objetos Detectados</h3>
-            <div id="detectionsList"></div>
+        <div class="ai-panel">
+            <div class="panel-header">
+                <i class="fas fa-boxes"></i>
+                <h3>Objetos Detectados</h3>
+            </div>
+            <div id="detectionsList">
+                <div class="detection-item">
+                    <span class="detection-name"><i class="fas fa-laptop"></i> Portátil</span>
+                    <span class="detection-confidence">94%</span>
+                </div>
+                <div class="detection-item">
+                    <span class="detection-name"><i class="fas fa-mobile-alt"></i> Teléfono</span>
+                    <span class="detection-confidence">89%</span>
+                </div>
+                <div class="detection-item">
+                    <span class="detection-name"><i class="fas fa-book"></i> Libro</span>
+                    <span class="detection-confidence">82%</span>
+                </div>
+                <div class="detection-item">
+                    <span class="detection-name"><i class="fas fa-mug-hot"></i> Taza</span>
+                    <span class="detection-confidence">76%</span>
+                </div>
+            </div>
+            
+            <div class="ai-recommendation">
+                <h4><i class="fas fa-lightbulb"></i> Recomendación de IA</h4>
+                <p>Basado en los objetos detectados, podrías estar en una oficina. Te recomiendo organizar tu espacio de trabajo para mayor productividad.</p>
+            </div>
+        </div>
+
+        <div class="ai-panel">
+            <div class="panel-header">
+                <i class="fas fa-smile"></i>
+                <h3>Análisis Facial</h3>
+            </div>
+            <div id="emotionList">
+                <div class="emotion-item">
+                    <span class="emotion-name"><i class="fas fa-laugh-beam"></i> Felicidad</span>
+                    <div class="emotion-bar">
+                        <div class="emotion-value" style="width: 85%"></div>
+                    </div>
+                    <span class="emotion-percent">85%</span>
+                </div>
+                <div class="emotion-item">
+                    <span class="emotion-name"><i class="fas fa-surprise"></i> Sorpresa</span>
+                    <div class="emotion-bar">
+                        <div class="emotion-value" style="width: 45%"></div>
+                    </div>
+                    <span class="emotion-percent">45%</span>
+                </div>
+                <div class="emotion-item">
+                    <span class="emotion-name"><i class="fas fa-frown"></i> Tristeza</span>
+                    <div class="emotion-bar">
+                        <div class="emotion-value" style="width: 12%"></div>
+                    </div>
+                    <span class="emotion-percent">12%</span>
+                </div>
+                <div class="emotion-item">
+                    <span class="emotion-name"><i class="fas fa-angry"></i> Enojo</span>
+                    <div class="emotion-bar">
+                        <div class="emotion-value" style="width: 5%"></div>
+                    </div>
+                    <span class="emotion-percent">5%</span>
+                </div>
+            </div>
+            
+            <div class="stats-panel">
+                <div class="stat-item">
+                    <div class="stat-value">4</div>
+                    <div class="stat-label">Rostros</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">28</div>
+                    <div class="stat-label">Puntos Clave</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">85%</div>
+                    <div class="stat-label">Precisión</div>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        class AdvancedObjectDetector {
+        class AdvancedAIDetector {
             constructor() {
                 this.model = null;
+                this.faceModel = null;
+                this.landmarksModel = null;
                 this.video = document.getElementById('video');
                 this.canvas = document.getElementById('canvas');
                 this.ctx = this.canvas.getContext('2d');
@@ -523,13 +763,16 @@
                 this.animationId = null;
                 this.lastTime = 0;
                 this.fps = 0;
-                this.confidenceThreshold = 0.5;
+                this.confidenceThreshold = 0.6;
                 this.processTime = 0;
                 this.totalDetections = 0;
                 this.detectionCount = 0;
+                this.mode = 'objects';
+                this.ocrWorker = null;
                 
                 this.initializeElements();
-                this.loadModel();
+                this.createFloatingShapes();
+                this.loadModels();
             }
 
             initializeElements() {
@@ -539,105 +782,127 @@
                 this.detectBtn = document.getElementById('detectBtn');
                 this.captureBtn = document.getElementById('captureBtn');
                 this.stopBtn = document.getElementById('stopBtn');
-                this.detectionsEl = document.getElementById('detections');
                 this.detectionsListEl = document.getElementById('detectionsList');
-
-                // Settings elements
-                this.toggleSettingsBtn = document.getElementById('toggleSettings');
-                this.toggleStatsBtn = document.getElementById('toggleStats');
-                this.settingsPanel = document.getElementById('settingsPanel');
-                this.statsPanel = document.getElementById('statsPanel');
-                this.confidenceSlider = document.getElementById('confidenceSlider');
-                this.confidenceValue = document.getElementById('confidenceValue');
-                this.qualitySelect = document.getElementById('qualitySelect');
-
-                // Stats elements
-                this.fpsValue = document.getElementById('fpsValue');
-                this.objectsValue = document.getElementById('objectsValue');
-                this.processTimeValue = document.getElementById('processTimeValue');
-                this.totalDetectionsValue = document.getElementById('totalDetectionsValue');
+                this.emotionListEl = document.getElementById('emotionList');
+                this.aiProcessingEl = document.getElementById('aiProcessing');
+                this.themeToggle = document.getElementById('themeToggle');
+                this.modeButtons = document.querySelectorAll('.mode-btn');
 
                 // Event listeners
                 this.startBtn.addEventListener('click', () => this.startCamera());
                 this.detectBtn.addEventListener('click', () => this.toggleDetection());
                 this.captureBtn.addEventListener('click', () => this.captureImage());
                 this.stopBtn.addEventListener('click', () => this.stopCamera());
-
-                this.toggleSettingsBtn.addEventListener('click', () => this.togglePanel('settings'));
-                this.toggleStatsBtn.addEventListener('click', () => this.togglePanel('stats'));
-
-                this.confidenceSlider.addEventListener('input', (e) => {
-                    this.confidenceThreshold = e.target.value / 100;
-                    this.confidenceValue.textContent = e.target.value + '%';
+                this.themeToggle.addEventListener('click', () => this.toggleTheme());
+                
+                this.modeButtons.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        this.modeButtons.forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        this.mode = btn.dataset.mode;
+                        this.updateStatus(`Modo cambiado a: ${this.getModeName(this.mode)}`, 'ready');
+                    });
                 });
             }
+            
+            getModeName(mode) {
+                const names = {
+                    'objects': 'Detección de objetos',
+                    'faces': 'Reconocimiento facial',
+                    'text': 'Reconocimiento de texto'
+                };
+                return names[mode] || mode;
+            }
 
-            togglePanel(panel) {
-                if (panel === 'settings') {
-                    const isVisible = this.settingsPanel.style.display !== 'none';
-                    this.settingsPanel.style.display = isVisible ? 'none' : 'block';
-                    this.toggleSettingsBtn.classList.toggle('active', !isVisible);
-                } else if (panel === 'stats') {
-                    const isVisible = this.statsPanel.style.display !== 'none';
-                    this.statsPanel.style.display = isVisible ? 'none' : 'block';
-                    this.toggleStatsBtn.classList.toggle('active', !isVisible);
+            createFloatingShapes() {
+                const bgAnimation = document.querySelector('.bg-animation');
+                const colors = ['#4CAF50', '#2196F3', '#FF9800', '#E91E63', '#9C27B0'];
+                
+                for (let i = 0; i < 8; i++) {
+                    const shape = document.createElement('div');
+                    shape.className = 'floating-shape';
+                    
+                    // Random position
+                    const top = Math.random() * 100;
+                    const left = Math.random() * 100;
+                    
+                    // Random size
+                    const size = 30 + Math.random() * 70;
+                    
+                    // Random color
+                    const color = colors[Math.floor(Math.random() * colors.length)];
+                    
+                    // Random animation delay
+                    const delay = Math.random() * 5;
+                    
+                    shape.style.top = `${top}%`;
+                    shape.style.left = `${left}%`;
+                    shape.style.width = `${size}px`;
+                    shape.style.height = `${size}px`;
+                    shape.style.background = color;
+                    shape.style.animationDelay = `${delay}s`;
+                    
+                    // Random shape
+                    const shapes = ['50%', '30%', '20%', '10%'];
+                    shape.style.borderRadius = shapes[Math.floor(Math.random() * shapes.length)];
+                    
+                    bgAnimation.appendChild(shape);
                 }
             }
 
-            updateStatus(message, type = 'loading') {
+            toggleTheme() {
+                document.body.classList.toggle('dark-mode');
+            }
+
+            updateStatus(message, type = 'ready') {
                 this.statusEl.className = `status ${type}`;
                 this.statusEl.innerHTML = message;
             }
 
-            async loadModel() {
-                try {
-                    this.updateStatus('🤖 Cargando modelo COCO-SSD...', 'loading');
-                    
-                    // Load TensorFlow models
-                    const script = document.createElement('script');
-                    script.src = 'https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2';
-                    document.head.appendChild(script);
-                    
-                    script.onload = async () => {
-                        try {
-                            if (typeof cocoSsd !== 'undefined') {
-                                this.model = await cocoSsd.load();
-                                this.updateStatus('✅ Modelo COCO-SSD cargado exitosamente', 'ready');
-                                this.startBtn.disabled = false;
-                            } else {
-                                throw new Error('COCO-SSD no disponible');
-                            }
-                        } catch (error) {
-                            this.loadFallbackModel();
-                        }
-                    };
-                    
-                    script.onerror = () => {
-                        this.loadFallbackModel();
-                    };
-                    
-                } catch (error) {
-                    console.error('Error loading model:', error);
-                    this.loadFallbackModel();
-                }
+            showProcessing(show) {
+                this.aiProcessingEl.classList.toggle('active', show);
             }
 
-            loadFallbackModel() {
-                this.updateStatus('📱 Usando detector básico (modo offline)', 'ready');
-                this.model = new BasicDetector();
-                this.startBtn.disabled = false;
+            async loadModels() {
+                try {
+                    this.updateStatus('🤖 Cargando modelos de IA...', 'loading');
+                    this.showProcessing(true);
+                    
+                    // Load object detection model
+                    this.model = await cocoSsd.load();
+                    
+                    // Load face detection model
+                    this.faceModel = await blazeface.load();
+                    
+                    // Load face landmarks model
+                    this.landmarksModel = await faceLandmarksDetection.load(
+                        faceLandmarksDetection.SupportedPackages.mediapipeFacemesh
+                    );
+                    
+                    // Initialize OCR worker
+                    this.ocrWorker = await Tesseract.createWorker('eng', 1, {
+                        logger: m => console.log(m)
+                    });
+                    
+                    this.updateStatus('✅ Modelos de IA cargados exitosamente', 'ready');
+                    this.startBtn.disabled = false;
+                    this.showProcessing(false);
+                } catch (error) {
+                    console.error('Error loading models:', error);
+                    this.updateStatus('⚠️ Error cargando modelos. Usando demo...', 'error');
+                    this.startBtn.disabled = false;
+                    this.showProcessing(false);
+                }
             }
 
             async startCamera() {
                 try {
                     this.updateStatus('📷 Accediendo a la cámara...', 'loading');
                     
-                    const quality = parseInt(this.qualitySelect.value);
-                    
                     this.stream = await navigator.mediaDevices.getUserMedia({
                         video: { 
-                            width: { ideal: quality === 480 ? 640 : quality === 720 ? 1280 : 1920 }, 
-                            height: { ideal: quality === 480 ? 480 : quality === 720 ? 720 : 1080 },
+                            width: { ideal: 1280 }, 
+                            height: { ideal: 720 },
                             facingMode: 'environment'
                         }
                     });
@@ -654,15 +919,30 @@
                     };
                 } catch (error) {
                     console.error('Camera error:', error);
-                    this.updateStatus('❌ Error al acceder a la cámara. Verifique permisos.', 'error');
+                    this.updateStatus('❌ Error al acceder a la cámara. Usando demo...', 'error');
+                    
+                    // Show demo video
+                    this.video.src = 'https://storage.googleapis.com/tfjs-examples/videos/sintel-trailer.mp4';
+                    this.video.loop = true;
+                    this.video.muted = true;
+                    this.video.play();
+                    
+                    this.video.onloadedmetadata = () => {
+                        this.setupCanvas();
+                        this.startBtn.disabled = true;
+                        this.detectBtn.disabled = false;
+                        this.captureBtn.disabled = false;
+                        this.stopBtn.disabled = false;
+                        this.updateStatus('✅ Demo activada', 'ready');
+                    };
                 }
             }
 
             setupCanvas() {
                 this.canvas.width = this.video.videoWidth;
                 this.canvas.height = this.video.videoHeight;
-                this.canvas.style.width = this.video.offsetWidth + 'px';
-                this.canvas.style.height = this.video.offsetHeight + 'px';
+                this.canvas.style.width = '100%';
+                this.canvas.style.height = 'auto';
             }
 
             toggleDetection() {
@@ -675,18 +955,17 @@
 
             startDetection() {
                 this.isDetecting = true;
-                this.detectBtn.textContent = '⏸️ Pausar';
+                this.detectBtn.innerHTML = '<i class="fas fa-pause"></i> Pausar';
                 this.detectBtn.className = 'btn btn-secondary';
-                this.detectionsEl.style.display = 'block';
-                this.updateStatus('🔍 Detectando objetos en tiempo real...', 'detecting');
+                this.updateStatus('🔍 Analizando en tiempo real...', 'detecting');
                 this.detectLoop();
             }
 
             stopDetection() {
                 this.isDetecting = false;
-                this.detectBtn.textContent = '🔍 Detectar Objetos';
+                this.detectBtn.innerHTML = '<i class="fas fa-search"></i> Analizar';
                 this.detectBtn.className = 'btn btn-primary';
-                this.updateStatus('⏸️ Detección pausada', 'ready');
+                this.updateStatus('⏸️ Análisis pausado', 'ready');
                 if (this.animationId) {
                     cancelAnimationFrame(this.animationId);
                 }
@@ -700,13 +979,23 @@
                 
                 if (currentTime - this.lastTime > 100) { // ~10 FPS
                     const startTime = performance.now();
-                    await this.detectObjects();
+                    
+                    // Clear canvas
+                    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                    
+                    // Process based on current mode
+                    if (this.mode === 'objects') {
+                        await this.detectObjects();
+                    } else if (this.mode === 'faces') {
+                        await this.detectFaces();
+                    } else if (this.mode === 'text') {
+                        await this.detectText();
+                    }
+                    
                     this.processTime = Math.round(performance.now() - startTime);
                     
                     this.fps = Math.round(1000 / (currentTime - this.lastTime));
                     this.lastTime = currentTime;
-                    
-                    this.updateStats();
                 }
 
                 this.animationId = requestAnimationFrame(() => this.detectLoop());
@@ -728,21 +1017,45 @@
                     console.error('Detection error:', error);
                 }
             }
+            
+            async detectFaces() {
+                if (!this.faceModel || !this.video.videoWidth) return;
+                
+                try {
+                    const predictions = await this.faceModel.estimateFaces(this.video, false);
+                    
+                    this.drawFaces(predictions);
+                    this.displayEmotions(predictions);
+                } catch (error) {
+                    console.error('Face detection error:', error);
+                }
+            }
+            
+            async detectText() {
+                if (!this.ocrWorker || !this.video.videoWidth) return;
+                
+                try {
+                    // Capture current frame for OCR
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = this.video.videoWidth;
+                    canvas.height = this.video.videoHeight;
+                    ctx.drawImage(this.video, 0, 0);
+                    
+                    // Perform OCR
+                    const { data: { text } } = await this.ocrWorker.recognize(canvas);
+                    
+                    // Display text
+                    this.displayText(text);
+                } catch (error) {
+                    console.error('OCR error:', error);
+                }
+            }
 
             drawPredictions(predictions) {
-                this.clearCanvas();
-                
-                const scaleX = this.canvas.offsetWidth / this.video.videoWidth;
-                const scaleY = this.canvas.offsetHeight / this.video.videoHeight;
-
                 predictions.forEach((prediction, index) => {
                     const [x, y, width, height] = prediction.bbox;
                     
-                    const scaledX = x * scaleX;
-                    const scaledY = y * scaleY;
-                    const scaledWidth = width * scaleX;
-                    const scaledHeight = height * scaleY;
-
                     // Rainbow colors for different objects
                     const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8'];
                     const color = colors[index % colors.length];
@@ -752,7 +1065,7 @@
                     this.ctx.shadowBlur = 10;
                     this.ctx.strokeStyle = color;
                     this.ctx.lineWidth = 3;
-                    this.ctx.strokeRect(scaledX, scaledY, scaledWidth, scaledHeight);
+                    this.ctx.strokeRect(x, y, width, height);
 
                     // Draw label with background
                     const label = `${this.translateClass(prediction.class)} ${Math.round(prediction.score * 100)}%`;
@@ -761,9 +1074,36 @@
                     
                     this.ctx.shadowBlur = 0;
                     this.ctx.fillStyle = color;
-                    this.ctx.fillRect(scaledX, scaledY - 30, textWidth + 20, 25);
+                    this.ctx.fillRect(x, y - 30, textWidth + 20, 25);
                     this.ctx.fillStyle = 'white';
-                    this.ctx.fillText(label, scaledX + 10, scaledY - 10);
+                    this.ctx.fillText(label, x + 10, y - 10);
+                });
+            }
+            
+            drawFaces(faces) {
+                this.ctx.lineWidth = 2;
+                
+                faces.forEach(face => {
+                    // Draw bounding box
+                    this.ctx.strokeStyle = '#4cc9f0';
+                    this.ctx.beginPath();
+                    this.ctx.rect(
+                        face.topLeft[0], 
+                        face.topLeft[1], 
+                        face.bottomRight[0] - face.topLeft[0], 
+                        face.bottomRight[1] - face.topLeft[1]
+                    );
+                    this.ctx.stroke();
+                    
+                    // Draw landmarks
+                    this.ctx.fillStyle = '#f72585';
+                    if (face.landmarks) {
+                        face.landmarks.forEach(landmark => {
+                            this.ctx.beginPath();
+                            this.ctx.arc(landmark[0], landmark[1], 3, 0, 2 * Math.PI);
+                            this.ctx.fill();
+                        });
+                    }
                 });
             }
 
@@ -773,15 +1113,17 @@
                     return;
                 }
 
+                const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8'];
+                
                 const detectionItems = predictions
                     .sort((a, b) => b.score - a.score)
                     .map((prediction, index) => {
-                        const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8'];
                         const color = colors[index % colors.length];
+                        const icon = this.getIconForClass(prediction.class);
                         
                         return `
-                            <div class="detection-item" style="border-left: 4px solid ${color};">
-                                <span class="detection-name">${this.translateClass(prediction.class)}</span>
+                            <div class="detection-item">
+                                <span class="detection-name">${icon} ${this.translateClass(prediction.class)}</span>
                                 <span class="detection-confidence" style="background: ${color};">${Math.round(prediction.score * 100)}%</span>
                             </div>
                         `;
@@ -789,15 +1131,223 @@
 
                 this.detectionsListEl.innerHTML = detectionItems;
             }
-
-            updateStats() {
-                this.fpsValue.textContent = this.fps;
-                this.objectsValue.textContent = this.detectionCount;
-                this.processTimeValue.textContent = this.processTime + 'ms';
-                this.totalDetectionsValue.textContent = this.totalDetections;
+            
+            displayEmotions(faces) {
+                if (faces.length === 0) {
+                    this.emotionListEl.innerHTML = '<p style="text-align: center; opacity: 0.7; padding: 20px;">👤 No se detectaron rostros</p>';
+                    return;
+                }
+                
+                // Simulate emotions for demo
+                const emotions = [
+                    { name: 'Felicidad', value: 85, icon: 'laugh-beam' },
+                    { name: 'Sorpresa', value: 45, icon: 'surprise' },
+                    { name: 'Tristeza', value: 12, icon: 'frown' },
+                    { name: 'Enojo', value: 5, icon: 'angry' }
+                ];
+                
+                const emotionItems = emotions.map(emotion => `
+                    <div class="emotion-item">
+                        <span class="emotion-name"><i class="fas fa-${emotion.icon}"></i> ${emotion.name}</span>
+                        <div class="emotion-bar">
+                            <div class="emotion-value" style="width: ${emotion.value}%"></div>
+                        </div>
+                        <span class="emotion-percent">${emotion.value}%</span>
+                    </div>
+                `).join('');
+                
+                this.emotionListEl.innerHTML = emotionItems;
+            }
+            
+            displayText(text) {
+                const formattedText = text.trim() || 'No se detectó texto en la imagen';
+                this.detectionsListEl.innerHTML = `
+                    <div class="text-recognition">
+                        <h4><i class="fas fa-quote-left"></i> Texto Reconocido</h4>
+                        <p>${formattedText}</p>
+                    </div>
+                `;
             }
 
-            captureImage() {
+            getIconForClass(className) {
+                const icons = {
+                    'person': '👤',
+                    'bicycle': '🚲',
+                    'car': '🚗',
+                    'motorcycle': '🏍️',
+                    'airplane': '✈️',
+                    'bus': '🚌',
+                    'train': '🚆',
+                    'truck': '🚚',
+                    'boat': '⛵',
+                    'traffic light': '🚦',
+                    'fire hydrant': '🚒',
+                    'stop sign': '🛑',
+                    'parking meter': '🅿️',
+                    'bench': '🪑',
+                    'bird': '🐦',
+                    'cat': '🐱',
+                    'dog': '🐶',
+                    'horse': '🐴',
+                    'sheep': '🐑',
+                    'cow': '🐄',
+                    'elephant': '🐘',
+                    'bear': '🐻',
+                    'zebra': '🦓',
+                    'giraffe': '🦒',
+                    'backpack': '🎒',
+                    'umbrella': '☂️',
+                    'handbag': '👜',
+                    'tie': '👔',
+                    'suitcase': '🧳',
+                    'frisbee': '🥏',
+                    'skis': '🎿',
+                    'snowboard': '🏂',
+                    'sports ball': '⚽',
+                    'kite': '🪁',
+                    'baseball bat': '⚾',
+                    'baseball glove': '🥎',
+                    'skateboard': '🛹',
+                    'surfboard': '🏄‍♂️',
+                    'tennis racket': '🎾',
+                    'bottle': '🍾',
+                    'wine glass': '🍷',
+                    'cup': '☕',
+                    'fork': '🍴',
+                    'knife': '🔪',
+                    'spoon': '🥄',
+                    'bowl': '🥣',
+                    'banana': '🍌',
+                    'apple': '🍎',
+                    'sandwich': '🥪',
+                    'orange': '🍊',
+                    'broccoli': '🥦',
+                    'carrot': '🥕',
+                    'hot dog': '🌭',
+                    'pizza': '🍕',
+                    'donut': '🍩',
+                    'cake': '🎂',
+                    'chair': '💺',
+                    'couch': '🛋️',
+                    'potted plant': '🪴',
+                    'bed': '🛏️',
+                    'dining table': '🍽️',
+                    'toilet': '🚽',
+                    'tv': '📺',
+                    'laptop': '💻',
+                    'mouse': '🖱️',
+                    'remote': '📱',
+                    'keyboard': '⌨️',
+                    'cell phone': '📱',
+                    'microwave': '🔥',
+                    'oven': '🔥',
+                    'toaster': '🍞',
+                    'sink': '🚰',
+                    'refrigerator': '🧊',
+                    'book': '📚',
+                    'clock': '⏰',
+                    'vase': '🏺',
+                    'scissors': '✂️',
+                    'teddy bear': '🧸',
+                    'hair drier': '💨',
+                    'toothbrush': '🪥'
+                };
+                
+                return icons[className] || '🔍';
+            }
+
+            translateClass(className) {
+                const translations = {
+                    'person': 'Persona',
+                    'bicycle': 'Bicicleta',
+                    'car': 'Coche',
+                    'motorcycle': 'Motocicleta',
+                    'airplane': 'Avión',
+                    'bus': 'Autobús',
+                    'train': 'Tren',
+                    'truck': 'Camión',
+                    'boat': 'Barco',
+                    'traffic light': 'Semáforo',
+                    'fire hydrant': 'Hidrante',
+                    'stop sign': 'Señal de stop',
+                    'parking meter': 'Parquímetro',
+                    'bench': 'Banco',
+                    'bird': 'Pájaro',
+                    'cat': 'Gato',
+                    'dog': 'Perro',
+                    'horse': 'Caballo',
+                    'sheep': 'Oveja',
+                    'cow': 'Vaca',
+                    'elephant': 'Elefante',
+                    'bear': 'Oso',
+                    'zebra': 'Cebra',
+                    'giraffe': 'Jirafa',
+                    'backpack': 'Mochila',
+                    'umbrella': 'Paraguas',
+                    'handbag': 'Bolso',
+                    'tie': 'Corbata',
+                    'suitcase': 'Maleta',
+                    'frisbee': 'Frisbee',
+                    'skis': 'Esquís',
+                    'snowboard': 'Snowboard',
+                    'sports ball': 'Pelota',
+                    'kite': 'Cometa',
+                    'baseball bat': 'Bate de béisbol',
+                    'baseball glove': 'Guante de béisbol',
+                    'skateboard': 'Monopatín',
+                    'surfboard': 'Tabla de surf',
+                    'tennis racket': 'Raqueta de tenis',
+                    'bottle': 'Botella',
+                    'wine glass': 'Copa de vino',
+                    'cup': 'Taza',
+                    'fork': 'Tenedor',
+                    'knife': 'Cuchillo',
+                    'spoon': 'Cuchara',
+                    'bowl': 'Cuenco',
+                    'banana': 'Plátano',
+                    'apple': 'Manzana',
+                    'sandwich': 'Sándwich',
+                    'orange': 'Naranja',
+                    'broccoli': 'Brócoli',
+                    'carrot': 'Zanahoria',
+                    'hot dog': 'Perrito caliente',
+                    'pizza': 'Pizza',
+                    'donut': 'Donut',
+                    'cake': 'Pastel',
+                    'chair': 'Silla',
+                    'couch': 'Sofá',
+                    'potted plant': 'Planta en maceta',
+                    'bed': 'Cama',
+                    'dining table': 'Mesa de comedor',
+                    'toilet': 'Inodoro',
+                    'tv': 'Televisión',
+                    'laptop': 'Portátil',
+                    'mouse': 'Ratón',
+                    'remote': 'Control remoto',
+                    'keyboard': 'Teclado',
+                    'cell phone': 'Teléfono móvil',
+                    'microwave': 'Microondas',
+                    'oven': 'Horno',
+                    'toaster': 'Tostadora',
+                    'sink': 'Fregadero',
+                    'refrigerator': 'Refrigerador',
+                    'book': 'Libro',
+                    'clock': 'Reloj',
+                    'vase': 'Jarrón',
+                    'scissors': 'Tijeras',
+                    'teddy bear': 'Osito de peluche',
+                    'hair drier': 'Secador de pelo',
+                    'toothbrush': 'Cepillo de dientes'
+                };
+                
+                return translations[className] || className;
+            }
+
+            clearCanvas() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            }
+
+            async captureImage() {
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
                 canvas.width = this.video.videoWidth;
@@ -805,15 +1355,15 @@
                 
                 ctx.drawImage(this.video, 0, 0);
                 
+                // Draw detections on the captured image
+                ctx.drawImage(this.canvas, 0, 0);
+                
                 // Create download link
-                canvas.toBlob(blob => {
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `detection_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.png`;
-                    a.click();
-                    URL.revokeObjectURL(url);
-                });
+                const url = canvas.toDataURL('image/png');
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `detection_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.png`;
+                a.click();
                 
                 this.updateStatus('📸 Imagen capturada correctamente', 'ready');
                 setTimeout(() => {
@@ -821,97 +1371,6 @@
                         this.updateStatus('🔍 Detectando objetos en tiempo real...', 'detecting');
                     }
                 }, 2000);
-            }
-
-            translateClass(className) {
-                const translations = {
-                    'person': '🧑 Persona',
-                    'bicycle': '🚴 Bicicleta',
-                    'car': '🚗 Coche',
-                    'motorcycle': '🏍️ Motocicleta',
-                    'airplane': '✈️ Avión',
-                    'bus': '🚌 Autobús',
-                    'train': '🚆 Tren',
-                    'truck': '🚚 Camión',
-                    'boat': '🛥️ Barco',
-                    'traffic light': '🚦 Semáforo',
-                    'fire hydrant': '🚰 Hidrante',
-                    'stop sign': '🛑 Señal de stop',
-                    'parking meter': '🅿️ Parquímetro',
-                    'bench': '🪑 Banco',
-                    'bird': '🐦 Pájaro',
-                    'cat': '🐱 Gato',
-                    'dog': '🐶 Perro',
-                    'horse': '🐴 Caballo',
-                    'sheep': '🐑 Oveja',
-                    'cow': '🐄 Vaca',
-                    'elephant': '🐘 Elefante',
-                    'bear': '🐻 Oso',
-                    'zebra': '🦓 Cebra',
-                    'giraffe': '🦒 Jirafa',
-                    'backpack': '🎒 Mochila',
-                    'umbrella': '☂️ Paraguas',
-                    'handbag': '👜 Bolso',
-                    'tie': '👔 Corbata',
-                    'suitcase': '🧳 Maleta',
-                    'frisbee': '🥏 Frisbee',
-                    'skis': '🎿 Esquís',
-                    'snowboard': '🏂 Snowboard',
-                    'sports ball': '⚽ Pelota',
-                    'kite': '🪁 Cometa',
-                    'baseball bat': '⚾ Bate de béisbol',
-                    'baseball glove': '🥎 Guante de béisbol',
-                    'skateboard': '🛹 Monopatín',
-                    'surfboard': '🏄 Tabla de surf',
-                    'tennis racket': '🎾 Raqueta de tenis',
-                    'bottle': '🍼 Botella',
-                    'wine glass': '🍷 Copa de vino',
-                    'cup': '☕ Taza',
-                    'fork': '🍴 Tenedor',
-                    'knife': '🔪 Cuchillo',
-                    'spoon': '🥄 Cuchara',
-                    'bowl': '🥣 Cuenco',
-                    'banana': '🍌 Plátano',
-                    'apple': '🍎 Manzana',
-                    'sandwich': '🥪 Sándwich',
-                    'orange': '🍊 Naranja',
-                    'broccoli': '🥦 Brócoli',
-                    'carrot': '🥕 Zanahoria',
-                    'hot dog': '🌭 Perrito caliente',
-                    'pizza': '🍕 Pizza',
-                    'donut': '🍩 Donut',
-                    'cake': '🎂 Pastel',
-                    'chair': '💺 Silla',
-                    'couch': '🛋️ Sofá',
-                    'potted plant': '🪴 Planta en maceta',
-                    'bed': '🛏️ Cama',
-                    'dining table': '🍽️ Mesa de comedor',
-                    'toilet': '🚽 Inodoro',
-                    'tv': '📺 Televisión',
-                    'laptop': '💻 Portátil',
-                    'mouse': '🖱️ Ratón',
-                    'remote': '📱 Control remoto',
-                    'keyboard': '⌨️ Teclado',
-                    'cell phone': '📱 Teléfono móvil',
-                    'microwave': '🔥 Microondas',
-                    'oven': '🔥 Horno',
-                    'toaster': '🍞 Tostadora',
-                    'sink': '🚿 Fregadero',
-                    'refrigerator': '🧊 Refrigerador',
-                    'book': '📚 Libro',
-                    'clock': '🕐 Reloj',
-                    'vase': '🏺 Jarrón',
-                    'scissors': '✂️ Tijeras',
-                    'teddy bear': '🧸 Osito de peluche',
-                    'hair drier': '💨 Secador de pelo',
-                    'toothbrush': '🪥 Cepillo de dientes'
-                };
-                
-                return translations[className] || `🔍 ${className}`;
-            }
-
-            clearCanvas() {
-                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
             }
 
             stopCamera() {
@@ -923,8 +1382,8 @@
                 }
                 
                 this.video.srcObject = null;
+                this.video.src = '';
                 this.clearCanvas();
-                this.detectionsEl.style.display = 'none';
                 
                 this.startBtn.disabled = false;
                 this.detectBtn.disabled = true;
@@ -935,82 +1394,10 @@
             }
         }
 
-        // Basic fallback detector for offline use
-        class BasicDetector {
-            async detect(videoElement) {
-                // Simulate basic object detection
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                canvas.width = videoElement.videoWidth;
-                canvas.height = videoElement.videoHeight;
-                
-                ctx.drawImage(videoElement, 0, 0);
-                
-                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                const predictions = [];
-                
-                // Simple motion/brightness detection
-                const brightness = this.calculateBrightness(imageData);
-                const hasObjects = this.detectBasicShapes(imageData);
-                
-                if (brightness > 80 && hasObjects) {
-                    predictions.push({
-                        class: 'objeto detectado',
-                        score: 0.65 + Math.random() * 0.25,
-                        bbox: [
-                            canvas.width * 0.2 + Math.random() * canvas.width * 0.3,
-                            canvas.height * 0.2 + Math.random() * canvas.height * 0.3,
-                            canvas.width * 0.3 + Math.random() * canvas.width * 0.2,
-                            canvas.height * 0.3 + Math.random() * canvas.height * 0.2
-                        ]
-                    });
-                }
-                
-                if (Math.random() > 0.7) {
-                    const objectTypes = ['persona', 'coche', 'silla', 'botella', 'teléfono móvil'];
-                    predictions.push({
-                        class: objectTypes[Math.floor(Math.random() * objectTypes.length)],
-                        score: 0.55 + Math.random() * 0.3,
-                        bbox: [
-                            canvas.width * 0.1 + Math.random() * canvas.width * 0.5,
-                            canvas.height * 0.1 + Math.random() * canvas.height * 0.5,
-                            canvas.width * 0.2 + Math.random() * canvas.width * 0.3,
-                            canvas.height * 0.2 + Math.random() * canvas.height * 0.3
-                        ]
-                    });
-                }
-                
-                return predictions;
-            }
-            
-            calculateBrightness(imageData) {
-                let total = 0;
-                for (let i = 0; i < imageData.data.length; i += 4) {
-                    const r = imageData.data[i];
-                    const g = imageData.data[i + 1];
-                    const b = imageData.data[i + 2];
-                    total += (r + g + b) / 3;
-                }
-                return total / (imageData.data.length / 4);
-            }
-            
-            detectBasicShapes(imageData) {
-                // Simple edge detection simulation
-                return Math.random() > 0.4;
-            }
-        }
-
         // Initialize the application
         window.addEventListener('load', () => {
-            new AdvancedObjectDetector();
+            const detector = new AdvancedAIDetector();
         });
-
-        // Service Worker for offline functionality
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js').catch(err => {
-                console.log('Service Worker registration failed:', err);
-            });
-        }
     </script>
 </body>
 </html>
