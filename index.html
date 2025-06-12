@@ -3,12 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Detector de Objetos IA Avanzado</title>
+    <title>Detector de Objetos IA - Componentizado</title>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.11.0"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@1.0.0"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection@1.0.0"></script>
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.5/dist/tesseract.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
@@ -61,54 +58,18 @@
             overflow-x: hidden;
         }
 
-        /* Animated background elements */
-        .bg-animation {
-            position: absolute;
-            top: 0;
-            left: 0;
+        /* Estilos de componentes */
+        .app-container {
+            max-width: 1200px;
             width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: -1;
-            overflow: hidden;
+            margin: 0 auto;
         }
 
-        .floating-shape {
-            position: absolute;
-            opacity: 0.1;
-            animation: float 6s ease-in-out infinite;
-            border-radius: 50%;
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0px) rotate(0deg); }
-            50% { transform: translateY(-20px) rotate(180deg); }
-        }
-
-        /* AI Brain animation */
-        .ai-brain {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 15rem;
-            opacity: 0.03;
-            z-index: -1;
-            animation: pulse 5s infinite;
-        }
-
-        @keyframes pulse {
-            0% { opacity: 0.03; transform: translate(-50%, -50%) scale(1); }
-            50% { opacity: 0.08; transform: translate(-50%, -50%) scale(1.05); }
-            100% { opacity: 0.03; transform: translate(-50%, -50%) scale(1); }
-        }
-
-        .header {
+        /* Header */
+        .app-header {
             text-align: center;
             margin-bottom: 30px;
             animation: slideDown 1s ease-out;
-            width: 100%;
-            max-width: 900px;
             position: relative;
         }
 
@@ -117,7 +78,7 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .header h1 {
+        .app-header h1 {
             font-size: 3rem;
             margin-bottom: 10px;
             text-shadow: 3px 3px 6px rgba(0,0,0,0.4);
@@ -129,7 +90,7 @@
             display: inline-block;
         }
 
-        .header h1::after {
+        .app-header h1::after {
             content: "";
             position: absolute;
             bottom: -10px;
@@ -141,7 +102,7 @@
             border-radius: 2px;
         }
 
-        .header p {
+        .app-header p {
             font-size: 1.2rem;
             opacity: 0.9;
             font-weight: 300;
@@ -149,72 +110,55 @@
             margin: 0 auto;
         }
 
-        .container {
-            background: var(--card-bg);
-            backdrop-filter: blur(20px);
-            border-radius: 25px;
-            padding: 35px;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--card-border);
-            max-width: 1200px;
-            width: 100%;
-            animation: slideUp 1s ease-out;
-            position: relative;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-        }
-
-        @media (max-width: 992px) {
-            .container {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(50px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .camera-section {
-            position: relative;
+        /* Status */
+        .status-indicator {
+            text-align: center;
             margin-bottom: 25px;
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            grid-column: 1 / -1;
+            padding: 20px;
+            border-radius: 15px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
         }
 
-        #video {
-            width: 100%;
-            max-width: 100%;
-            height: auto;
-            display: block;
-            margin: 0 auto;
-            border-radius: 20px;
-            background: #000;
+        .status-indicator.loading {
+            background: rgba(255, 193, 7, 0.3);
+            border-color: rgba(255, 193, 7, 0.5);
         }
 
-        #canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border-radius: 20px;
-            pointer-events: none;
+        .status-indicator.ready {
+            background: rgba(76, 175, 80, 0.3);
+            border-color: rgba(76, 175, 80, 0.5);
         }
 
-        .controls {
+        .status-indicator.error {
+            background: rgba(244, 67, 54, 0.3);
+            border-color: rgba(244, 67, 54, 0.5);
+        }
+
+        .status-indicator.detecting {
+            background: rgba(33, 150, 243, 0.3);
+            border-color: rgba(33, 150, 243, 0.5);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        /* Controls */
+        .controls-container {
             display: flex;
             flex-wrap: wrap;
             gap: 15px;
             justify-content: center;
             margin-bottom: 25px;
-            grid-column: 1 / -1;
         }
 
-        .btn {
+        .control-btn {
             padding: 15px 30px;
             border: none;
             border-radius: 30px;
@@ -230,11 +174,11 @@
             gap: 10px;
         }
 
-        .btn i {
+        .control-btn i {
             font-size: 1.2rem;
         }
 
-        .btn::before {
+        .control-btn::before {
             content: '';
             position: absolute;
             top: 0;
@@ -245,7 +189,7 @@
             transition: left 0.5s;
         }
 
-        .btn:hover::before {
+        .control-btn:hover::before {
             left: 100%;
         }
 
@@ -269,58 +213,62 @@
             color: white;
         }
 
-        .btn:hover {
+        .control-btn:hover {
             transform: translateY(-3px) scale(1.05);
             box-shadow: 0 10px 25px rgba(0,0,0,0.4);
         }
 
-        .btn:active {
+        .control-btn:active {
             transform: translateY(-1px) scale(1.02);
         }
 
-        .btn:disabled {
+        .control-btn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
             transform: none;
         }
 
-        .status {
-            text-align: center;
+        /* Camera */
+        .camera-section {
+            position: relative;
             margin-bottom: 25px;
-            padding: 20px;
-            border-radius: 15px;
-            background: rgba(255, 255, 255, 0.15);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-            grid-column: 1 / -1;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
 
-        .status.loading {
-            background: rgba(255, 193, 7, 0.3);
-            border-color: rgba(255, 193, 7, 0.5);
+        #video {
+            width: 100%;
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 0 auto;
+            border-radius: 20px;
+            background: #000;
         }
 
-        .status.ready {
-            background: rgba(76, 175, 80, 0.3);
-            border-color: rgba(76, 175, 80, 0.5);
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 20px;
+            pointer-events: none;
         }
 
-        .status.error {
-            background: rgba(244, 67, 54, 0.3);
-            border-color: rgba(244, 67, 54, 0.5);
+        /* AI Panels */
+        .ai-panels-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 20px;
         }
 
-        .status.detecting {
-            background: rgba(33, 150, 243, 0.3);
-            border-color: rgba(33, 150, 243, 0.5);
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.02); }
-            100% { transform: scale(1); }
+        @media (max-width: 992px) {
+            .ai-panels-container {
+                grid-template-columns: 1fr;
+            }
         }
 
         .ai-panel {
@@ -332,6 +280,12 @@
             display: flex;
             flex-direction: column;
             height: 100%;
+            animation: slideUp 1s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(50px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .panel-header {
@@ -353,6 +307,7 @@
             color: var(--success);
         }
 
+        /* Detection Item */
         .detection-item {
             background: rgba(255, 255, 255, 0.1);
             padding: 15px 20px;
@@ -393,6 +348,7 @@
             font-weight: 700;
         }
 
+        /* Emotion Analysis */
         .emotion-item {
             display: flex;
             justify-content: space-between;
@@ -428,38 +384,8 @@
             font-weight: 600;
         }
 
-        .text-recognition {
-            background: rgba(255,255,255,0.05);
-            padding: 15px;
-            border-radius: 15px;
-            margin-top: 15px;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-
-        .ai-recommendation {
-            background: linear-gradient(45deg, rgba(76,175,80,0.2), rgba(33,150,243,0.2));
-            border-left: 4px solid var(--success);
-            padding: 15px;
-            border-radius: 0 15px 15px 0;
-            margin-top: 20px;
-            animation: fadeIn 0.5s ease-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .ai-recommendation h4 {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
-            color: var(--success);
-        }
-
-        .stats-panel {
+        /* Stats */
+        .stats-container {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
             gap: 15px;
@@ -487,6 +413,7 @@
             margin-top: 5px;
         }
 
+        /* Theme Toggle */
         .theme-toggle {
             position: absolute;
             top: 20px;
@@ -515,11 +442,12 @@
             transform: translateX(30px);
         }
 
+        /* Mode Switcher */
         .mode-switcher {
             display: flex;
             gap: 10px;
             margin-bottom: 20px;
-            grid-column: 1 / -1;
+            justify-content: center;
         }
 
         .mode-btn {
@@ -540,6 +468,7 @@
             box-shadow: 0 4px 15px rgba(67, 97, 238, 0.4);
         }
 
+        /* AI Processing */
         .ai-processing {
             position: absolute;
             top: 0;
@@ -582,20 +511,13 @@
             max-width: 300px;
         }
 
+        /* Responsive */
         @media (max-width: 768px) {
-            .header h1 {
+            .app-header h1 {
                 font-size: 2.2rem;
             }
             
-            .container {
-                padding: 20px;
-            }
-            
-            .controls {
-                gap: 10px;
-            }
-            
-            .btn {
+            .control-btn {
                 padding: 12px 20px;
                 font-size: 1rem;
             }
@@ -607,29 +529,25 @@
     </style>
 </head>
 <body>
-    <div class="bg-animation">
-        <!-- Floating shapes will be generated by JS -->
-    </div>
-    
-    <div class="ai-brain">
-        <i class="fas fa-brain"></i>
-    </div>
-
+    <!-- Componente: Theme Toggle -->
     <div class="theme-toggle" id="themeToggle">
         <div class="toggle-handle"></div>
     </div>
 
-    <div class="header">
-        <h1><i class="fas fa-robot"></i> Detector de Objetos IA Avanzado</h1>
-        <p>Inteligencia artificial de próxima generación para reconocimiento visual multidimensional</p>
-    </div>
+    <!-- Componente: App Header -->
+    <header class="app-header">
+        <h1><i class="fas fa-robot"></i> Detector de Objetos IA</h1>
+        <p>Inteligencia artificial avanzada para reconocimiento visual multidimensional</p>
+    </header>
 
-    <div class="container">
-        <div class="status ready" id="status">
+    <div class="app-container">
+        <!-- Componente: Status Indicator -->
+        <div class="status-indicator ready" id="status">
             <strong>✅ Sistema listo</strong><br>
             Haz clic en "Iniciar Cámara" para comenzar
         </div>
 
+        <!-- Componente: Mode Switcher -->
         <div class="mode-switcher">
             <button class="mode-btn active" data-mode="objects">
                 <i class="fas fa-box"></i> Objetos
@@ -642,168 +560,161 @@
             </button>
         </div>
 
-        <div class="controls">
-            <button class="btn btn-primary" id="startBtn">
+        <!-- Componente: Controls -->
+        <div class="controls-container">
+            <button class="control-btn btn-primary" id="startBtn">
                 <i class="fas fa-camera"></i> Iniciar Cámara
             </button>
-            <button class="btn btn-secondary" id="detectBtn" disabled>
+            <button class="control-btn btn-secondary" id="detectBtn" disabled>
                 <i class="fas fa-search"></i> Analizar
             </button>
-            <button class="btn btn-warning" id="captureBtn" disabled>
+            <button class="control-btn btn-warning" id="captureBtn" disabled>
                 <i class="fas fa-camera-retro"></i> Capturar
             </button>
-            <button class="btn btn-danger" id="stopBtn" disabled>
+            <button class="control-btn btn-danger" id="stopBtn" disabled>
                 <i class="fas fa-stop"></i> Detener
             </button>
         </div>
 
-        <div class="camera-section">
+        <!-- Componente: Camera Section -->
+        <section class="camera-section">
             <video id="video" autoplay muted playsinline></video>
             <canvas id="canvas"></canvas>
             <div class="ai-processing" id="aiProcessing">
                 <i class="fas fa-cogs"></i>
                 <p>Procesando con inteligencia artificial...</p>
             </div>
-        </div>
+        </section>
 
-        <div class="ai-panel">
-            <div class="panel-header">
-                <i class="fas fa-boxes"></i>
-                <h3>Objetos Detectados</h3>
+        <!-- Componente: AI Panels Container -->
+        <div class="ai-panels-container">
+            <!-- Componente: Object Detection Panel -->
+            <div class="ai-panel">
+                <div class="panel-header">
+                    <i class="fas fa-boxes"></i>
+                    <h3>Objetos Detectados</h3>
+                </div>
+                <div id="detectionsList">
+                    <div class="detection-item">
+                        <span class="detection-name"><i class="fas fa-laptop"></i> Portátil</span>
+                        <span class="detection-confidence">94%</span>
+                    </div>
+                    <div class="detection-item">
+                        <span class="detection-name"><i class="fas fa-mobile-alt"></i> Teléfono</span>
+                        <span class="detection-confidence">89%</span>
+                    </div>
+                    <div class="detection-item">
+                        <span class="detection-name"><i class="fas fa-book"></i> Libro</span>
+                        <span class="detection-confidence">82%</span>
+                    </div>
+                    <div class="detection-item">
+                        <span class="detection-name"><i class="fas fa-mug-hot"></i> Taza</span>
+                        <span class="detection-confidence">76%</span>
+                    </div>
+                </div>
             </div>
-            <div id="detectionsList">
-                <div class="detection-item">
-                    <span class="detection-name"><i class="fas fa-laptop"></i> Portátil</span>
-                    <span class="detection-confidence">94%</span>
-                </div>
-                <div class="detection-item">
-                    <span class="detection-name"><i class="fas fa-mobile-alt"></i> Teléfono</span>
-                    <span class="detection-confidence">89%</span>
-                </div>
-                <div class="detection-item">
-                    <span class="detection-name"><i class="fas fa-book"></i> Libro</span>
-                    <span class="detection-confidence">82%</span>
-                </div>
-                <div class="detection-item">
-                    <span class="detection-name"><i class="fas fa-mug-hot"></i> Taza</span>
-                    <span class="detection-confidence">76%</span>
-                </div>
-            </div>
-            
-            <div class="ai-recommendation">
-                <h4><i class="fas fa-lightbulb"></i> Recomendación de IA</h4>
-                <p>Basado en los objetos detectados, podrías estar en una oficina. Te recomiendo organizar tu espacio de trabajo para mayor productividad.</p>
-            </div>
-        </div>
 
-        <div class="ai-panel">
-            <div class="panel-header">
-                <i class="fas fa-smile"></i>
-                <h3>Análisis Facial</h3>
-            </div>
-            <div id="emotionList">
-                <div class="emotion-item">
-                    <span class="emotion-name"><i class="fas fa-laugh-beam"></i> Felicidad</span>
-                    <div class="emotion-bar">
-                        <div class="emotion-value" style="width: 85%"></div>
+            <!-- Componente: Face Analysis Panel -->
+            <div class="ai-panel">
+                <div class="panel-header">
+                    <i class="fas fa-smile"></i>
+                    <h3>Análisis Facial</h3>
+                </div>
+                <div id="emotionList">
+                    <div class="emotion-item">
+                        <span class="emotion-name"><i class="fas fa-laugh-beam"></i> Felicidad</span>
+                        <div class="emotion-bar">
+                            <div class="emotion-value" style="width: 85%"></div>
+                        </div>
+                        <span class="emotion-percent">85%</span>
                     </div>
-                    <span class="emotion-percent">85%</span>
-                </div>
-                <div class="emotion-item">
-                    <span class="emotion-name"><i class="fas fa-surprise"></i> Sorpresa</span>
-                    <div class="emotion-bar">
-                        <div class="emotion-value" style="width: 45%"></div>
+                    <div class="emotion-item">
+                        <span class="emotion-name"><i class="fas fa-surprise"></i> Sorpresa</span>
+                        <div class="emotion-bar">
+                            <div class="emotion-value" style="width: 45%"></div>
+                        </div>
+                        <span class="emotion-percent">45%</span>
                     </div>
-                    <span class="emotion-percent">45%</span>
-                </div>
-                <div class="emotion-item">
-                    <span class="emotion-name"><i class="fas fa-frown"></i> Tristeza</span>
-                    <div class="emotion-bar">
-                        <div class="emotion-value" style="width: 12%"></div>
+                    <div class="emotion-item">
+                        <span class="emotion-name"><i class="fas fa-frown"></i> Tristeza</span>
+                        <div class="emotion-bar">
+                            <div class="emotion-value" style="width: 12%"></div>
+                        </div>
+                        <span class="emotion-percent">12%</span>
                     </div>
-                    <span class="emotion-percent">12%</span>
-                </div>
-                <div class="emotion-item">
-                    <span class="emotion-name"><i class="fas fa-angry"></i> Enojo</span>
-                    <div class="emotion-bar">
-                        <div class="emotion-value" style="width: 5%"></div>
+                    <div class="emotion-item">
+                        <span class="emotion-name"><i class="fas fa-angry"></i> Enojo</span>
+                        <div class="emotion-bar">
+                            <div class="emotion-value" style="width: 5%"></div>
+                        </div>
+                        <span class="emotion-percent">5%</span>
                     </div>
-                    <span class="emotion-percent">5%</span>
                 </div>
-            </div>
-            
-            <div class="stats-panel">
-                <div class="stat-item">
-                    <div class="stat-value">4</div>
-                    <div class="stat-label">Rostros</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-value">28</div>
-                    <div class="stat-label">Puntos Clave</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-value">85%</div>
-                    <div class="stat-label">Precisión</div>
+                
+                <!-- Componente: Stats -->
+                <div class="stats-container">
+                    <div class="stat-item">
+                        <div class="stat-value">4</div>
+                        <div class="stat-label">Rostros</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">28</div>
+                        <div class="stat-label">Puntos Clave</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">85%</div>
+                        <div class="stat-label">Precisión</div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        class AdvancedAIDetector {
-            constructor() {
-                this.model = null;
-                this.faceModel = null;
-                this.landmarksModel = null;
-                this.video = document.getElementById('video');
-                this.canvas = document.getElementById('canvas');
-                this.ctx = this.canvas.getContext('2d');
-                this.isDetecting = false;
-                this.stream = null;
-                this.animationId = null;
-                this.lastTime = 0;
-                this.fps = 0;
-                this.confidenceThreshold = 0.6;
-                this.processTime = 0;
-                this.totalDetections = 0;
-                this.detectionCount = 0;
-                this.mode = 'objects';
-                this.ocrWorker = null;
-                
-                this.initializeElements();
-                this.createFloatingShapes();
-                this.loadModels();
-            }
-
-            initializeElements() {
-                // Main elements
-                this.statusEl = document.getElementById('status');
-                this.startBtn = document.getElementById('startBtn');
-                this.detectBtn = document.getElementById('detectBtn');
-                this.captureBtn = document.getElementById('captureBtn');
-                this.stopBtn = document.getElementById('stopBtn');
-                this.detectionsListEl = document.getElementById('detectionsList');
-                this.emotionListEl = document.getElementById('emotionList');
-                this.aiProcessingEl = document.getElementById('aiProcessing');
+        // Módulo: Theme Manager
+        const ThemeManager = {
+            init() {
                 this.themeToggle = document.getElementById('themeToggle');
-                this.modeButtons = document.querySelectorAll('.mode-btn');
-
-                // Event listeners
-                this.startBtn.addEventListener('click', () => this.startCamera());
-                this.detectBtn.addEventListener('click', () => this.toggleDetection());
-                this.captureBtn.addEventListener('click', () => this.captureImage());
-                this.stopBtn.addEventListener('click', () => this.stopCamera());
                 this.themeToggle.addEventListener('click', () => this.toggleTheme());
+            },
+            
+            toggleTheme() {
+                document.body.classList.toggle('dark-mode');
+            }
+        };
+
+        // Módulo: Status Manager
+        const StatusManager = {
+            init() {
+                this.statusEl = document.getElementById('status');
+            },
+            
+            update(message, type = 'ready') {
+                this.statusEl.className = `status-indicator ${type}`;
+                this.statusEl.innerHTML = message;
+            },
+            
+            showProcessing(show) {
+                const aiProcessing = document.getElementById('aiProcessing');
+                aiProcessing.classList.toggle('active', show);
+            }
+        };
+
+        // Módulo: Mode Manager
+        const ModeManager = {
+            init() {
+                this.modeButtons = document.querySelectorAll('.mode-btn');
+                this.currentMode = 'objects';
                 
                 this.modeButtons.forEach(btn => {
                     btn.addEventListener('click', () => {
                         this.modeButtons.forEach(b => b.classList.remove('active'));
                         btn.classList.add('active');
-                        this.mode = btn.dataset.mode;
-                        this.updateStatus(`Modo cambiado a: ${this.getModeName(this.mode)}`, 'ready');
+                        this.currentMode = btn.dataset.mode;
+                        StatusManager.update(`Modo cambiado a: ${this.getModeName(this.currentMode)}`, 'ready');
                     });
                 });
-            }
+            },
             
             getModeName(mode) {
                 const names = {
@@ -812,92 +723,38 @@
                     'text': 'Reconocimiento de texto'
                 };
                 return names[mode] || mode;
+            },
+            
+            getCurrentMode() {
+                return this.currentMode;
             }
+        };
 
-            createFloatingShapes() {
-                const bgAnimation = document.querySelector('.bg-animation');
-                const colors = ['#4CAF50', '#2196F3', '#FF9800', '#E91E63', '#9C27B0'];
+        // Módulo: Camera Manager
+        const CameraManager = {
+            init() {
+                this.video = document.getElementById('video');
+                this.canvas = document.getElementById('canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.stream = null;
+                this.isActive = false;
                 
-                for (let i = 0; i < 8; i++) {
-                    const shape = document.createElement('div');
-                    shape.className = 'floating-shape';
-                    
-                    // Random position
-                    const top = Math.random() * 100;
-                    const left = Math.random() * 100;
-                    
-                    // Random size
-                    const size = 30 + Math.random() * 70;
-                    
-                    // Random color
-                    const color = colors[Math.floor(Math.random() * colors.length)];
-                    
-                    // Random animation delay
-                    const delay = Math.random() * 5;
-                    
-                    shape.style.top = `${top}%`;
-                    shape.style.left = `${left}%`;
-                    shape.style.width = `${size}px`;
-                    shape.style.height = `${size}px`;
-                    shape.style.background = color;
-                    shape.style.animationDelay = `${delay}s`;
-                    
-                    // Random shape
-                    const shapes = ['50%', '30%', '20%', '10%'];
-                    shape.style.borderRadius = shapes[Math.floor(Math.random() * shapes.length)];
-                    
-                    bgAnimation.appendChild(shape);
-                }
-            }
-
-            toggleTheme() {
-                document.body.classList.toggle('dark-mode');
-            }
-
-            updateStatus(message, type = 'ready') {
-                this.statusEl.className = `status ${type}`;
-                this.statusEl.innerHTML = message;
-            }
-
-            showProcessing(show) {
-                this.aiProcessingEl.classList.toggle('active', show);
-            }
-
-            async loadModels() {
+                // Botones
+                this.startBtn = document.getElementById('startBtn');
+                this.detectBtn = document.getElementById('detectBtn');
+                this.captureBtn = document.getElementById('captureBtn');
+                this.stopBtn = document.getElementById('stopBtn');
+                
+                // Event listeners
+                this.startBtn.addEventListener('click', () => this.start());
+                this.detectBtn.addEventListener('click', () => DetectionManager.toggleDetection());
+                this.captureBtn.addEventListener('click', () => this.captureImage());
+                this.stopBtn.addEventListener('click', () => this.stop());
+            },
+            
+            async start() {
                 try {
-                    this.updateStatus('🤖 Cargando modelos de IA...', 'loading');
-                    this.showProcessing(true);
-                    
-                    // Load object detection model
-                    this.model = await cocoSsd.load();
-                    
-                    // Load face detection model
-                    this.faceModel = await blazeface.load();
-                    
-                    // Load face landmarks model
-                    this.landmarksModel = await faceLandmarksDetection.load(
-                        faceLandmarksDetection.SupportedPackages.mediapipeFacemesh
-                    );
-                    
-                    // Initialize OCR worker
-                    this.ocrWorker = await Tesseract.createWorker('eng', 1, {
-                        logger: m => console.log(m)
-                    });
-                    
-                    this.updateStatus('✅ Modelos de IA cargados exitosamente', 'ready');
-                    this.startBtn.disabled = false;
-                    this.showProcessing(false);
-                } catch (error) {
-                    console.error('Error loading models:', error);
-                    this.updateStatus('⚠️ Error cargando modelos. Usando demo...', 'error');
-                    this.startBtn.disabled = false;
-                    this.showProcessing(false);
-                }
-            }
-
-            async startCamera() {
-                try {
-                    this.updateStatus('📷 Accediendo a la cámara...', 'loading');
+                    StatusManager.update('📷 Accediendo a la cámara...', 'loading');
                     
                     this.stream = await navigator.mediaDevices.getUserMedia({
                         video: { 
@@ -911,85 +768,172 @@
                     
                     this.video.onloadedmetadata = () => {
                         this.setupCanvas();
-                        this.updateStatus('✅ Cámara iniciada correctamente', 'ready');
-                        this.startBtn.disabled = true;
-                        this.detectBtn.disabled = false;
-                        this.captureBtn.disabled = false;
-                        this.stopBtn.disabled = false;
+                        StatusManager.update('✅ Cámara iniciada correctamente', 'ready');
+                        this.enableControls(true);
+                        this.isActive = true;
                     };
                 } catch (error) {
                     console.error('Camera error:', error);
-                    this.updateStatus('❌ Error al acceder a la cámara. Usando demo...', 'error');
-                    
-                    // Show demo video
-                    this.video.src = 'https://storage.googleapis.com/tfjs-examples/videos/sintel-trailer.mp4';
-                    this.video.loop = true;
-                    this.video.muted = true;
-                    this.video.play();
-                    
-                    this.video.onloadedmetadata = () => {
-                        this.setupCanvas();
-                        this.startBtn.disabled = true;
-                        this.detectBtn.disabled = false;
-                        this.captureBtn.disabled = false;
-                        this.stopBtn.disabled = false;
-                        this.updateStatus('✅ Demo activada', 'ready');
-                    };
+                    StatusManager.update('❌ Error al acceder a la cámara. Usando demo...', 'error');
+                    this.useDemoVideo();
                 }
-            }
-
+            },
+            
             setupCanvas() {
                 this.canvas.width = this.video.videoWidth;
                 this.canvas.height = this.video.videoHeight;
                 this.canvas.style.width = '100%';
                 this.canvas.style.height = 'auto';
+            },
+            
+            useDemoVideo() {
+                this.video.src = 'https://storage.googleapis.com/tfjs-examples/videos/sintel-trailer.mp4';
+                this.video.loop = true;
+                this.video.muted = true;
+                this.video.play();
+                
+                this.video.onloadedmetadata = () => {
+                    this.setupCanvas();
+                    this.enableControls(true);
+                    StatusManager.update('✅ Demo activada', 'ready');
+                    this.isActive = true;
+                };
+            },
+            
+            stop() {
+                DetectionManager.stopDetection();
+                
+                if (this.stream) {
+                    this.stream.getTracks().forEach(track => track.stop());
+                    this.stream = null;
+                }
+                
+                this.video.srcObject = null;
+                this.video.src = '';
+                this.clearCanvas();
+                this.enableControls(false);
+                
+                StatusManager.update('📷 Cámara desconectada', 'ready');
+                this.isActive = false;
+            },
+            
+            enableControls(enabled) {
+                this.startBtn.disabled = enabled;
+                this.detectBtn.disabled = !enabled;
+                this.captureBtn.disabled = !enabled;
+                this.stopBtn.disabled = !enabled;
+            },
+            
+            clearCanvas() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            },
+            
+            captureImage() {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = this.video.videoWidth;
+                canvas.height = this.video.videoHeight;
+                
+                ctx.drawImage(this.video, 0, 0);
+                
+                // Draw detections
+                ctx.drawImage(this.canvas, 0, 0);
+                
+                // Create download link
+                const url = canvas.toDataURL('image/png');
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `detection_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.png`;
+                a.click();
+                
+                StatusManager.update('📸 Imagen capturada correctamente', 'ready');
+            },
+            
+            isReady() {
+                return this.isActive;
             }
+        };
 
+        // Módulo: Detection Manager
+        const DetectionManager = {
+            init() {
+                this.model = null;
+                this.isDetecting = false;
+                this.animationId = null;
+                this.lastTime = 0;
+                this.fps = 0;
+                this.confidenceThreshold = 0.6;
+                this.processTime = 0;
+                this.totalDetections = 0;
+                this.detectionCount = 0;
+                
+                this.detectBtn = document.getElementById('detectBtn');
+                this.detectionsListEl = document.getElementById('detectionsList');
+                this.emotionListEl = document.getElementById('emotionList');
+                
+                this.loadModels();
+            },
+            
+            async loadModels() {
+                try {
+                    StatusManager.update('🤖 Cargando modelos de IA...', 'loading');
+                    StatusManager.showProcessing(true);
+                    
+                    // Cargar modelos
+                    this.model = await cocoSsd.load();
+                    
+                    StatusManager.update('✅ Modelos de IA cargados exitosamente', 'ready');
+                    StatusManager.showProcessing(false);
+                } catch (error) {
+                    console.error('Error loading models:', error);
+                    StatusManager.update('⚠️ Error cargando modelos. Usando demo...', 'error');
+                    StatusManager.showProcessing(false);
+                }
+            },
+            
             toggleDetection() {
                 if (this.isDetecting) {
                     this.stopDetection();
                 } else {
                     this.startDetection();
                 }
-            }
-
+            },
+            
             startDetection() {
+                if (!CameraManager.isReady()) return;
+                
                 this.isDetecting = true;
                 this.detectBtn.innerHTML = '<i class="fas fa-pause"></i> Pausar';
-                this.detectBtn.className = 'btn btn-secondary';
-                this.updateStatus('🔍 Analizando en tiempo real...', 'detecting');
+                this.detectBtn.className = 'control-btn btn-secondary';
+                StatusManager.update('🔍 Analizando en tiempo real...', 'detecting');
                 this.detectLoop();
-            }
-
+            },
+            
             stopDetection() {
                 this.isDetecting = false;
                 this.detectBtn.innerHTML = '<i class="fas fa-search"></i> Analizar';
-                this.detectBtn.className = 'btn btn-primary';
-                this.updateStatus('⏸️ Análisis pausado', 'ready');
+                this.detectBtn.className = 'control-btn btn-primary';
+                StatusManager.update('⏸️ Análisis pausado', 'ready');
                 if (this.animationId) {
                     cancelAnimationFrame(this.animationId);
                 }
-                this.clearCanvas();
-            }
-
+                CameraManager.clearCanvas();
+            },
+            
             async detectLoop() {
                 if (!this.isDetecting) return;
 
                 const currentTime = performance.now();
                 
-                if (currentTime - this.lastTime > 100) { // ~10 FPS
+                if (currentTime - this.lastTime > 100) {
                     const startTime = performance.now();
                     
-                    // Clear canvas
-                    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                    // Limpiar canvas
+                    CameraManager.clearCanvas();
                     
-                    // Process based on current mode
-                    if (this.mode === 'objects') {
+                    // Procesar según el modo actual
+                    if (ModeManager.getCurrentMode() === 'objects') {
                         await this.detectObjects();
-                    } else if (this.mode === 'faces') {
-                        await this.detectFaces();
-                    } else if (this.mode === 'text') {
-                        await this.detectText();
                     }
                     
                     this.processTime = Math.round(performance.now() - startTime);
@@ -999,13 +943,13 @@
                 }
 
                 this.animationId = requestAnimationFrame(() => this.detectLoop());
-            }
-
+            },
+            
             async detectObjects() {
-                if (!this.model || !this.video.videoWidth) return;
+                if (!this.model || !CameraManager.video.videoWidth) return;
 
                 try {
-                    const predictions = await this.model.detect(this.video);
+                    const predictions = await this.model.detect(CameraManager.video);
                     const filteredPredictions = predictions.filter(p => p.score > this.confidenceThreshold);
                     
                     this.detectionCount = filteredPredictions.length;
@@ -1016,97 +960,38 @@
                 } catch (error) {
                     console.error('Detection error:', error);
                 }
-            }
+            },
             
-            async detectFaces() {
-                if (!this.faceModel || !this.video.videoWidth) return;
-                
-                try {
-                    const predictions = await this.faceModel.estimateFaces(this.video, false);
-                    
-                    this.drawFaces(predictions);
-                    this.displayEmotions(predictions);
-                } catch (error) {
-                    console.error('Face detection error:', error);
-                }
-            }
-            
-            async detectText() {
-                if (!this.ocrWorker || !this.video.videoWidth) return;
-                
-                try {
-                    // Capture current frame for OCR
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    canvas.width = this.video.videoWidth;
-                    canvas.height = this.video.videoHeight;
-                    ctx.drawImage(this.video, 0, 0);
-                    
-                    // Perform OCR
-                    const { data: { text } } = await this.ocrWorker.recognize(canvas);
-                    
-                    // Display text
-                    this.displayText(text);
-                } catch (error) {
-                    console.error('OCR error:', error);
-                }
-            }
-
             drawPredictions(predictions) {
+                const ctx = CameraManager.ctx;
+                
                 predictions.forEach((prediction, index) => {
                     const [x, y, width, height] = prediction.bbox;
                     
-                    // Rainbow colors for different objects
+                    // Colores
                     const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8'];
                     const color = colors[index % colors.length];
 
-                    // Draw bounding box with glow effect
-                    this.ctx.shadowColor = color;
-                    this.ctx.shadowBlur = 10;
-                    this.ctx.strokeStyle = color;
-                    this.ctx.lineWidth = 3;
-                    this.ctx.strokeRect(x, y, width, height);
+                    // Dibujar bounding box
+                    ctx.shadowColor = color;
+                    ctx.shadowBlur = 10;
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(x, y, width, height);
 
-                    // Draw label with background
+                    // Dibujar etiqueta
                     const label = `${this.translateClass(prediction.class)} ${Math.round(prediction.score * 100)}%`;
-                    this.ctx.font = 'bold 16px Arial';
-                    const textWidth = this.ctx.measureText(label).width;
+                    ctx.font = 'bold 16px Arial';
+                    const textWidth = ctx.measureText(label).width;
                     
-                    this.ctx.shadowBlur = 0;
-                    this.ctx.fillStyle = color;
-                    this.ctx.fillRect(x, y - 30, textWidth + 20, 25);
-                    this.ctx.fillStyle = 'white';
-                    this.ctx.fillText(label, x + 10, y - 10);
+                    ctx.shadowBlur = 0;
+                    ctx.fillStyle = color;
+                    ctx.fillRect(x, y - 30, textWidth + 20, 25);
+                    ctx.fillStyle = 'white';
+                    ctx.fillText(label, x + 10, y - 10);
                 });
-            }
+            },
             
-            drawFaces(faces) {
-                this.ctx.lineWidth = 2;
-                
-                faces.forEach(face => {
-                    // Draw bounding box
-                    this.ctx.strokeStyle = '#4cc9f0';
-                    this.ctx.beginPath();
-                    this.ctx.rect(
-                        face.topLeft[0], 
-                        face.topLeft[1], 
-                        face.bottomRight[0] - face.topLeft[0], 
-                        face.bottomRight[1] - face.topLeft[1]
-                    );
-                    this.ctx.stroke();
-                    
-                    // Draw landmarks
-                    this.ctx.fillStyle = '#f72585';
-                    if (face.landmarks) {
-                        face.landmarks.forEach(landmark => {
-                            this.ctx.beginPath();
-                            this.ctx.arc(landmark[0], landmark[1], 3, 0, 2 * Math.PI);
-                            this.ctx.fill();
-                        });
-                    }
-                });
-            }
-
             displayDetections(predictions) {
                 if (predictions.length === 0) {
                     this.detectionsListEl.innerHTML = '<p style="text-align: center; opacity: 0.7; padding: 20px;">🔍 No se detectaron objetos</p>';
@@ -1130,45 +1015,8 @@
                     }).join('');
 
                 this.detectionsListEl.innerHTML = detectionItems;
-            }
+            },
             
-            displayEmotions(faces) {
-                if (faces.length === 0) {
-                    this.emotionListEl.innerHTML = '<p style="text-align: center; opacity: 0.7; padding: 20px;">👤 No se detectaron rostros</p>';
-                    return;
-                }
-                
-                // Simulate emotions for demo
-                const emotions = [
-                    { name: 'Felicidad', value: 85, icon: 'laugh-beam' },
-                    { name: 'Sorpresa', value: 45, icon: 'surprise' },
-                    { name: 'Tristeza', value: 12, icon: 'frown' },
-                    { name: 'Enojo', value: 5, icon: 'angry' }
-                ];
-                
-                const emotionItems = emotions.map(emotion => `
-                    <div class="emotion-item">
-                        <span class="emotion-name"><i class="fas fa-${emotion.icon}"></i> ${emotion.name}</span>
-                        <div class="emotion-bar">
-                            <div class="emotion-value" style="width: ${emotion.value}%"></div>
-                        </div>
-                        <span class="emotion-percent">${emotion.value}%</span>
-                    </div>
-                `).join('');
-                
-                this.emotionListEl.innerHTML = emotionItems;
-            }
-            
-            displayText(text) {
-                const formattedText = text.trim() || 'No se detectó texto en la imagen';
-                this.detectionsListEl.innerHTML = `
-                    <div class="text-recognition">
-                        <h4><i class="fas fa-quote-left"></i> Texto Reconocido</h4>
-                        <p>${formattedText}</p>
-                    </div>
-                `;
-            }
-
             getIconForClass(className) {
                 const icons = {
                     'person': '👤',
@@ -1254,8 +1102,8 @@
                 };
                 
                 return icons[className] || '🔍';
-            }
-
+            },
+            
             translateClass(className) {
                 const translations = {
                     'person': 'Persona',
@@ -1342,61 +1190,15 @@
                 
                 return translations[className] || className;
             }
+        };
 
-            clearCanvas() {
-                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-            }
-
-            async captureImage() {
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                canvas.width = this.video.videoWidth;
-                canvas.height = this.video.videoHeight;
-                
-                ctx.drawImage(this.video, 0, 0);
-                
-                // Draw detections on the captured image
-                ctx.drawImage(this.canvas, 0, 0);
-                
-                // Create download link
-                const url = canvas.toDataURL('image/png');
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `detection_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.png`;
-                a.click();
-                
-                this.updateStatus('📸 Imagen capturada correctamente', 'ready');
-                setTimeout(() => {
-                    if (this.isDetecting) {
-                        this.updateStatus('🔍 Detectando objetos en tiempo real...', 'detecting');
-                    }
-                }, 2000);
-            }
-
-            stopCamera() {
-                this.stopDetection();
-                
-                if (this.stream) {
-                    this.stream.getTracks().forEach(track => track.stop());
-                    this.stream = null;
-                }
-                
-                this.video.srcObject = null;
-                this.video.src = '';
-                this.clearCanvas();
-                
-                this.startBtn.disabled = false;
-                this.detectBtn.disabled = true;
-                this.captureBtn.disabled = true;
-                this.stopBtn.disabled = true;
-                
-                this.updateStatus('📷 Cámara desconectada', 'ready');
-            }
-        }
-
-        // Initialize the application
+        // Inicialización de la aplicación
         window.addEventListener('load', () => {
-            const detector = new AdvancedAIDetector();
+            ThemeManager.init();
+            StatusManager.init();
+            ModeManager.init();
+            CameraManager.init();
+            DetectionManager.init();
         });
     </script>
 </body>
